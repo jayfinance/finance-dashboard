@@ -60,7 +60,7 @@ def get_current_price(ticker, name):
 # -------------------------------
 # 국내자산 처리
 # -------------------------------
-if menu == "Table" and submenu == "국내자산":
+if menu == "Table" and submenu == "국내 투자자산":
     sheet = spreadsheet.worksheet("국내자산")
     data = sheet.get_all_records()
     df = pd.DataFrame(data)
