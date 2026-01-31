@@ -27,7 +27,7 @@ spreadsheet = client.open("FinanceRaw")
 # 메뉴 구성
 # -------------------------------
 menu = st.sidebar.radio("메뉴 선택", ["Table"])
-submenu = st.sidebar.selectbox("자산 구분", ["국내자산"])
+submenu = st.sidebar.selectbox("자산 구분", ["국내 투자자산"])
 
 # -------------------------------
 # 국제 금 가격 → 원화 g당 가격
@@ -78,12 +78,36 @@ if menu == "Table" and submenu == "국내자산":
     df["보유수량"] = pd.to_numeric(df["보유수량"], errors="coerce")
     df["매수단가"] = pd.to_numeric(df["매수단가"], errors="coerce")
 
-    df["매입총액 (KRW)"] = df["보유수량"] * df["매수단가"]
 
+    df["매입총액 (KRW)"] = df["보유수량"] * df["매수단가"]
     df["현재가"] = df.apply(lambda row: get_current_price(row["종목코드"], row["종목명"]), axis=1)
     df["평가총액 (KRW)"] = df["보유수량"] * df["현재가"]
     df["평가손익 (KRW)"] = df["평가총액 (KRW)"] - df["매입총액 (KRW)"]
     df["수익률 (%)"] = (df["평가총액 (KRW)"] / df["매입총액 (KRW)"] - 1) * 100
+
+    # -------------------------------
+    # 합계 및 최종 수익률 계산
+    # -------------------------------
+    total_buy = df["매입총액 (KRW)"].sum()
+    total_eval = df["평가총액 (KRW)"].sum()
+    total_profit = df["평가손익 (KRW)"].sum()
+    final_yield = (total_eval / total_buy - 1) * 100 if total_buy != 0 else 0
+
+    # 포맷 함수 재사용
+    def format_comma(x):
+        try:
+            return f"{int(x):,}"
+        except:
+            return x
+
+    st.markdown(f"""
+    <div style='display: flex; gap: 32px; font-size: 1.1em; font-weight: bold;'>
+        <div>매입총액 합계: {format_comma(total_buy)} 원</div>
+        <div>평가총액 합계: {format_comma(total_eval)} 원</div>
+        <div>평가손익 합계: {format_comma(total_profit)} 원</div>
+        <div>최종 수익률: {final_yield:.2f}%</div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # -------------------------------
     # 포맷 함수
@@ -108,5 +132,5 @@ if menu == "Table" and submenu == "국내자산":
     df["평가손익 (KRW)"] = df["평가손익 (KRW)"].apply(format_comma)
     df["수익률 (%)"] = df["수익률 (%)"].apply(lambda x: f"{x:.2f}%" if pd.notnull(x) else "-")
 
-    st.subheader("📋 국내자산 평가 테이블")
+    st.subheader("📋 국내 투자자산 평가 테이블")
     st.dataframe(df, use_container_width=True)
