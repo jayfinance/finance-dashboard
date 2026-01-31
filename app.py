@@ -49,6 +49,9 @@ if menu == "Table" and submenu == "국내자산":
         "성격", "보유수량", "매수단가"
     ]]
 
+    # 종목코드 앞 0 보존 (문자열 처리)
+    df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
+
     # 숫자 변환
     df["보유수량"] = pd.to_numeric(df["보유수량"], errors="coerce")
     df["매수단가"] = pd.to_numeric(df["매수단가"], errors="coerce")
@@ -72,6 +75,30 @@ if menu == "Table" and submenu == "국내자산":
     df["평가총액 (KRW)"] = df["보유수량"] * df["현재가"]
     df["평가손익 (KRW)"] = df["평가총액 (KRW)"] - df["매입총액 (KRW)"]
     df["수익률 (%)"] = (df["평가총액 (KRW)"] / df["매입총액 (KRW)"] - 1) * 100
+
+    # 천단위 콤마 포맷 적용 함수
+    def format_comma(x):
+        try:
+            return f"{int(x):,}"
+        except:
+            return x
+
+    # 소수점 포함 천단위 콤마 포맷 (예: 1,234.56)
+    def format_comma_float(x):
+        try:
+            return f"{x:,.2f}"
+        except:
+            return x
+
+    # 포맷 적용
+    df["보유수량"] = df["보유수량"].apply(format_comma)
+    df["매수단가"] = df["매수단가"].apply(format_comma)
+    df["매입총액 (KRW)"] = df["매입총액 (KRW)"].apply(format_comma)
+    df["현재가"] = df["현재가"].apply(format_comma)
+    df["평가총액 (KRW)"] = df["평가총액 (KRW)"].apply(format_comma)
+    df["평가손익 (KRW)"] = df["평가손익 (KRW)"].apply(format_comma)
+    # 수익률 % 기호 추가
+    df["수익률 (%)"] = df["수익률 (%)"].apply(lambda x: f"{x:.2f}%" if pd.notnull(x) else "-")
 
     # -------------------------------
     # 표시
