@@ -1,13 +1,12 @@
 import streamlit as st
+import pandas as pd
+import yfinance as yf
+import gspread
+import requests
+from google.oauth2.service_account import Credentials
 
 # -------------------------------
-# 페이지 기본 설정
-# -------------------------------
-st.set_page_config(page_title="Finance Dashboard", layout="wide")
-st.title("📊 Finance Dashboard")
-
-# -------------------------------
-# 서비스 & 유틸 로드
+# 모듈 import
 # -------------------------------
 from service.sheets import get_spreadsheet
 from service.market import (
@@ -20,30 +19,22 @@ from service.market import (
 
 from ui.formatters import fmt_num, fmt_pct, fmt_num2
 
-# -------------------------------
-# 테이블 모듈
-# -------------------------------
 from tables.domestic import render as domestic_table
 from tables.overseas import render as overseas_table
 from tables.crypto import render as crypto_table
 from tables.cash import render as cash_table
 
-# -------------------------------
-# 차트 모듈 (추후 구현)
-# -------------------------------
-# from charts.domestic_chart import render as domestic_chart
-# from charts.overseas_chart import render as overseas_chart
-# from charts.crypto_chart import render as crypto_chart
-# from charts.cash_chart import render as cash_chart
+st.set_page_config(page_title="Finance Dashboard", layout="wide")
+st.title("📊 Finance Dashboard")
 
 # -------------------------------
 # Google Sheets 연결
 # -------------------------------
 spreadsheet = get_spreadsheet()
 
-# -------------------------------
+# =========================================================
 # 🌲 사이드바 트리 메뉴
-# -------------------------------
+# =========================================================
 st.sidebar.markdown("## 📂 메뉴")
 section = st.sidebar.radio("대분류", ["Chart", "Table"])
 
@@ -110,3 +101,314 @@ elif page == "현금성자산":
 # =========================================================
 # elif page == "국내 투자자산 차트":
 #     domestic_chart(...)
+# elif page == "해외 투자자산 차트":
+#     overseas_chart(...)
+# elif page == "가상자산 차트":
+#     crypto_chart(...)
+# elif page == "현금성자산 차트":
+#     cash_chart(...)
+
+# -------------------------------
+# 포맷 함수
+# -------------------------------
+def _to_float(x):
+    try:
+        if pd.isna(x):
+            return None
+        return float(str(x).replace(",", ""))
+    except:
+        return None
+
+def fmt_num(x):
+    v = _to_float(x)
+    return "-" if v is None else f"{v:,.0f}"
+
+def fmt_num2(x):
+    v = _to_float(x)
+    return "-" if v is None else f"{v:,.2f}"
+
+def fmt_pct(x):
+    v = _to_float(x)
+    return "-" if v is None else f"{v:.2f}%"
+
+# =========================================================
+# 🪙 국내 투자자산
+# =========================================================
+
+if page == "국내 투자자산":
+
+    st.subheader("📋 국내 투자자산 평가 테이블")
+
+    sheet = spreadsheet.worksheet("국내자산")
+    rows = sheet.get_all_values()
+    df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+
+    required = ["증권사","소유","종목명","종목코드","계좌구분","성격","보유수량","매수단가"]
+    df = df[required].copy()
+    df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
+    df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
+    df["매수단가"] = pd.to_numeric(df["매수단가"].str.replace(",", ""), errors="coerce")
+
+    df["매입총액 (KRW)"] = df["보유수량"] * df["매수단가"]
+    df["현재가"] = [get_kr_price(t, n, local_gold_override) for t, n in zip(df["종목코드"], df["종목명"])]
+    df["평가총액 (KRW)"] = df["보유수량"] * df["현재가"]
+    df["평가손익 (KRW)"] = df["평가총액 (KRW)"] - df["매입총액 (KRW)"]
+    df["수익률 (%)"] = (df["평가총액 (KRW)"] / df["매입총액 (KRW)"] - 1) * 100
+
+    total_buy = df["매입총액 (KRW)"].sum()
+    total_eval = df["평가총액 (KRW)"].sum()
+    total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
+
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-size:1.1em;font-weight:bold;'>
+        <div>국내 자산 매입총액: {fmt_num(total_buy)} 원</div>
+        <div>국내 자산 평가총액: {fmt_num(total_eval)} 원</div>
+        <div>국내 자산 전체 수익률: {fmt_pct(total_yield)}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    display_df = df.copy()
+    for col in ["보유수량","매수단가","매입총액 (KRW)","현재가","평가총액 (KRW)","평가손익 (KRW)"]:
+        display_df[col] = display_df[col].apply(fmt_num)
+    display_df["수익률 (%)"] = display_df["수익률 (%)"].apply(fmt_pct)
+
+    st.dataframe(display_df, use_container_width=True)
+
+# =========================================================
+# 🪙 해외 투자자산
+# =========================================================
+
+if page == "해외 투자자산":
+
+    usdkrw = get_usdkrw()
+
+    left, right = st.columns([4, 1])
+    with left:
+        st.subheader("📋 해외 투자자산 평가 테이블")
+    with right:
+        st.markdown(
+            f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>"
+            if usdkrw else "현재 환율: -",
+            unsafe_allow_html=True
+        )
+
+    view_option = st.radio("표시 통화 옵션", ["모두 보기", "LC로 보기", "KRW로 보기"], horizontal=True)
+
+    sheet = spreadsheet.worksheet("해외자산")
+    rows = sheet.get_all_values()
+    df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+    df.rename(columns={"매입가": "매수단가"}, inplace=True)
+
+    required = ["증권사","소유","종목티커","계좌구분","성격","보유수량","매수단가","매입환율"]
+    df = df[required].copy()
+
+    df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
+    df["매수단가"] = pd.to_numeric(df["매수단가"].str.replace(",", ""), errors="coerce")
+    df["매입환율"] = pd.to_numeric(df["매입환율"].str.replace(",", ""), errors="coerce")
+
+    df["매입총액(LC)"] = df["보유수량"] * df["매수단가"]
+    df["매입총액(KRW)"] = df["매입총액(LC)"] * df["매입환율"]
+
+    df["현재가"] = df["종목티커"].apply(get_us_price)
+    df["평가총액(LC)"] = df["보유수량"] * df["현재가"]
+    df["평가총액(KRW)"] = df["평가총액(LC)"] * usdkrw
+    df["수익률(KRW)"] = (df["평가총액(KRW)"] / df["매입총액(KRW)"] - 1) * 100
+
+    total_buy = df["매입총액(KRW)"].sum()
+    total_eval = df["평가총액(KRW)"].sum()
+    total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
+
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-size:1.1em;font-weight:bold;'>
+        <div>해외 자산 매입총액: {fmt_num(total_buy)} 원</div>
+        <div>해외 자산 평가총액: {fmt_num(total_eval)} 원</div>
+        <div>해외 자산 전체 수익률: {fmt_pct(total_yield)}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    display_df = df.copy()
+    display_df["매입환율"] = display_df["매입환율"].apply(fmt_num2)
+    display_df["매입총액(LC)"] = display_df["매입총액(LC)"].apply(fmt_num2)
+    display_df["매입총액(KRW)"] = display_df["매입총액(KRW)"].apply(fmt_num)
+    display_df["평가총액(LC)"] = display_df["평가총액(LC)"].apply(fmt_num2)
+    display_df["평가총액(KRW)"] = display_df["평가총액(KRW)"].apply(fmt_num)
+    display_df["수익률(KRW)"] = display_df["수익률(KRW)"].apply(fmt_pct)
+
+    st.dataframe(display_df, use_container_width=True)
+
+# =========================================================
+# 🪙 가상자산 (안정화 최종 버전)
+# =========================================================
+if page == "가상자산":
+
+    usdkrw = get_usdkrw()
+
+    left, right = st.columns([4,1])
+    with left:
+        st.subheader("📋 가상자산 평가 테이블")
+    with right:
+        if usdkrw is None:
+            st.markdown("<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: -</div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>", unsafe_allow_html=True)
+
+    sheet = spreadsheet.worksheet("가상자산")
+    rows = sheet.get_all_values()
+    raw_df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+
+    required_cols = ["증권사","소유","코인","심볼","coingecko_id","통화","수량(qty)","평균매수가(avg_price)"]
+    missing = [c for c in required_cols if c not in raw_df.columns]
+    if missing:
+        st.error(f"가상자산 시트에 다음 컬럼이 없습니다: {missing}")
+        st.stop()
+
+    df = raw_df[required_cols].copy()
+
+    # 🔹 숫자 정리
+    df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].astype(str).str.replace(",", ""), errors="coerce")
+    df["평균매수가(avg_price)"] = pd.to_numeric(df["평균매수가(avg_price)"].astype(str).str.replace(",", ""), errors="coerce")
+
+    # 🔹 coingecko_id 정리
+    df["coingecko_id"] = df["coingecko_id"].astype(str).str.strip().str.lower()
+
+    # 🔹 통화 정리
+    df["통화"] = df["통화"].astype(str).str.strip().str.upper()
+    df["통화"] = df["통화"].replace({
+        "원": "KRW",
+        "KR": "KRW",
+        "달러": "USD",
+        "US": "USD"
+    })
+
+    # 🔹 모든 코인 ID
+    all_ids = df["coingecko_id"].dropna().unique().tolist()
+
+    # 🔹 CoinGecko 호출 (캐시 15분)
+    @st.cache_data(ttl=900)
+    def fetch_crypto_prices(ids):
+        try:
+            res = requests.get(
+                "https://api.coingecko.com/api/v3/simple/price",
+                params={"ids": ",".join(ids), "vs_currencies": "usd,krw"},
+                timeout=10
+            )
+            data = res.json()
+            if not data:  # rate limit 시 빈 dict 방지
+                return None
+            return data
+        except:
+            return None
+
+    price_map = fetch_crypto_prices(all_ids)
+
+    # 🔹 실패 시 이전 가격 유지
+    if price_map is None:
+        st.warning("⚠ CoinGecko 호출 제한 발생 — 이전 가격 사용")
+        price_map = st.session_state.get("last_crypto_prices", {})
+    else:
+        st.session_state["last_crypto_prices"] = price_map
+
+    # 🔹 현재가 매칭
+    def get_price(row):
+        cid = row["coingecko_id"]
+        cur = row["통화"]
+        info = price_map.get(cid, {})
+        if cur == "KRW":
+            return info.get("krw")
+        elif cur == "USD":
+            return info.get("usd")
+        return None
+
+    df["현재가"] = df.apply(get_price, axis=1)
+
+    # 계산
+    df["매입총액"] = df["수량(qty)"] * df["평균매수가(avg_price)"]
+
+    df["매입총액(KRW)"] = df.apply(
+        lambda r: r["매입총액"] if r["통화"]=="KRW"
+        else (r["매입총액"] * usdkrw if usdkrw else float("nan")),
+        axis=1
+    )
+
+    df["평가총액"] = df["수량(qty)"] * df["현재가"]
+
+    df["평가총액(KRW)"] = df.apply(
+        lambda r: r["평가총액"] if r["통화"]=="KRW"
+        else (r["평가총액"] * usdkrw if usdkrw else float("nan")),
+        axis=1
+    )
+
+    df["수익률"] = (df["평가총액(KRW)"] / df["매입총액(KRW)"] - 1) * 100
+
+    total_buy = df["매입총액(KRW)"].sum()
+    total_eval = df["평가총액(KRW)"].sum()
+    total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
+
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-weight:bold;'>
+        <div>가상 자산 매입총액: {fmt_num(total_buy)} 원</div>
+        <div>가상 자산 평가총액: {fmt_num(total_eval)} 원</div>
+        <div>가상 자산 전체 수익률: {fmt_pct(total_yield)}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 표시용 포맷
+    display_df = df.copy()
+    display_df["수량(qty)"] = display_df["수량(qty)"].apply(lambda x: f"{x:,.9f}" if pd.notna(x) else "-")
+
+    for col in ["평균매수가(avg_price)", "현재가", "매입총액", "매입총액(KRW)", "평가총액", "평가총액(KRW)"]:
+        display_df[col] = display_df[col].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
+
+    display_df["수익률"] = display_df["수익률"].apply(fmt_pct)
+
+    st.dataframe(display_df, use_container_width=True)
+
+# =========================================================
+# 💰 현금성자산
+# =========================================================
+if page == "현금성자산":
+
+    usdkrw = get_usdkrw()
+
+    left, right = st.columns([4, 1])
+    with left:
+        st.subheader("📋 현금성자산 테이블")
+    with right:
+        st.markdown(
+            f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>"
+            if usdkrw else "현재 환율: -",
+            unsafe_allow_html=True
+        )
+
+    sheet = spreadsheet.worksheet("현금성자산")
+    rows = sheet.get_all_values()
+    raw_df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+
+    required_cols = ["증권사", "소유", "계좌구분", "통화", "성격", "금액"]
+    missing = [c for c in required_cols if c not in raw_df.columns]
+    if missing:
+        st.error(f"현금성자산 시트에 다음 컬럼이 없습니다: {missing}")
+        st.stop()
+
+    df = raw_df[required_cols].copy()
+    df["금액"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce")
+
+    df["금액(KRW)"] = df.apply(
+        lambda r: r["금액"] if str(r["통화"]).upper() == "KRW"
+        else (r["금액"] * usdkrw if usdkrw else float("nan")),
+        axis=1
+    )
+
+    total_cash_krw = df["금액(KRW)"].sum()
+
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-size:1.1em;font-weight:bold;'>
+        <div>현금성자산 총액 (KRW): {fmt_num(total_cash_krw)} 원</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    display_df = df.copy()
+    display_df["금액"] = display_df["금액"].apply(fmt_num)
+    display_df["금액(KRW)"] = display_df["금액(KRW)"].apply(fmt_num)
+
+    st.dataframe(display_df, use_container_width=True)
