@@ -202,7 +202,8 @@ if menu == "Table" and submenu == "가상자산":
     usdkrw = get_usdkrw()
 
     left, right = st.columns([4,1])
-    with left: st.subheader("📋 가상자산 평가 테이블")
+    with left:
+        st.subheader("📋 가상자산 평가 테이블")
     with right:
         if usdkrw is None:
             st.markdown("<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: -</div>", unsafe_allow_html=True)
@@ -211,10 +212,16 @@ if menu == "Table" and submenu == "가상자산":
 
     sheet = spreadsheet.worksheet("가상자산")
     rows = sheet.get_all_values()
-    df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+    raw_df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
 
-    if "비고" in df.columns:
-        df.drop(columns=["비고"], inplace=True)
+    # ✅ 필요한 컬럼만 선택 (비고 자동 제거)
+    required_cols = ["증권사","소유","코인","심볼","coingecko_id","통화","수량(qty)","평균매수가(avg_price)"]
+    missing = [c for c in required_cols if c not in raw_df.columns]
+    if missing:
+        st.error(f"가상자산 시트에 다음 컬럼이 없습니다: {missing}")
+        st.stop()
+
+    df = raw_df[required_cols].copy()
 
     df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].str.replace(",", ""), errors="coerce")
     df["평균매수가(avg_price)"] = pd.to_numeric(df["평균매수가(avg_price)"].str.replace(",", ""), errors="coerce")
@@ -232,7 +239,6 @@ if menu == "Table" and submenu == "가상자산":
     df["현재가"] = df.apply(get_price, axis=1)
     df["매입총액"] = df["수량(qty)"] * df["평균매수가(avg_price)"]
 
-    # ✅ KRW 기준 매입총액 추가
     df["매입총액(KRW)"] = df.apply(
         lambda r: r["매입총액"] if r["통화"].upper()=="KRW"
         else (r["매입총액"] * usdkrw if usdkrw else float("nan")),
@@ -258,6 +264,7 @@ if menu == "Table" and submenu == "가상자산":
     </div>
     """, unsafe_allow_html=True)
 
+    # 표시용 포맷
     display_df = df.copy()
     display_df["수량(qty)"] = display_df["수량(qty)"].apply(lambda x: f"{x:,.9f}" if pd.notna(x) else "-")
     for col in ["평균매수가(avg_price)", "현재가", "매입총액", "매입총액(KRW)", "평가총액", "평가총액(KRW)"]:
