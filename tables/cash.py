@@ -3,9 +3,6 @@ import pandas as pd
 import gspread  # 🔥 반드시 필요
 import inspect
 st.write("DEBUG cash module path:", inspect.getfile(inspect.currentframe()))
-import os
-import streamlit as st
-st.caption(f"cash.py loaded from: {os.path.abspath(__file__)}")
 
 
 def _to_float(x):
