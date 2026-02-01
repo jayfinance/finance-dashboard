@@ -19,50 +19,11 @@ creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"],
 client = gspread.authorize(creds)
 spreadsheet = client.open("FinanceRaw")
 
-# =========================================================
-# 🌲 사이드바 트리 메뉴 (최종 안정 버전)
-# =========================================================
-st.sidebar.markdown("## 📂 메뉴")
-section = st.sidebar.radio("대분류", ["Chart", "Table"])
-
-page = None
-
-if section == "Chart":
-    with st.sidebar.expander("자산 - Overview Chart", expanded=True):
-        asset_chart_page = st.radio(
-            "선택",
-            ["국내 투자자산 차트", "해외 투자자산 차트", "가상자산 차트", "현금성자산 차트"],
-            key="chart_assets"
-        )
-
-    with st.sidebar.expander("배당"):
-        dividend_chart_page = st.radio(
-            "선택",
-            ["국내 배당 차트", "해외 배당 차트"],
-            key="chart_div"
-        )
-
-    # 마지막에 선택된 radio 값 기준으로 page 결정
-    page = st.session_state.get("chart_assets") or st.session_state.get("chart_div")
-
-
-elif section == "Table":
-    with st.sidebar.expander("자산", expanded=True):
-        asset_table_page = st.radio(
-            "선택",
-            ["국내 투자자산", "해외 투자자산", "가상자산", "현금성자산"],
-            key="table_assets"
-        )
-
-    with st.sidebar.expander("배당"):
-        dividend_table_page = st.radio(
-            "선택",
-            ["국내 배당", "해외 배당"],
-            key="table_div"
-        )
-
-    page = st.session_state.get("table_assets") or st.session_state.get("table_div")
-
+# -------------------------------
+# 사이드바
+# -------------------------------
+menu = st.sidebar.radio("메뉴 선택", ["Table"])
+submenu = st.sidebar.selectbox("자산 구분", ["국내 투자자산", "해외 투자자산", "가상자산", "현금성자산"])
 
 st.sidebar.markdown("### 🟡 금(보정 옵션)")
 local_gold_override = st.sidebar.number_input(
@@ -73,7 +34,7 @@ local_gold_override = st.sidebar.number_input(
 )
 
 # -------------------------------
-# 공통 데이터 함수
+# 공통 함수
 # -------------------------------
 @st.cache_data(ttl=600)
 def get_usdkrw():
@@ -107,24 +68,29 @@ def get_us_price(ticker):
     except:
         return None
 
+# -------------------------------
+# CoinGecko 통화별 호출
+# -------------------------------
 @st.cache_data(ttl=300)
 def get_crypto_prices_usd(ids):
     try:
-        return requests.get("https://api.coingecko.com/api/v3/simple/price",
-                            params={"ids": ",".join(ids), "vs_currencies": "usd"}).json()
+        url = "https://api.coingecko.com/api/v3/simple/price"
+        params = {"ids": ",".join(ids), "vs_currencies": "usd"}
+        return requests.get(url, params=params).json()
     except:
         return {}
 
 @st.cache_data(ttl=300)
 def get_crypto_prices_krw(ids):
     try:
-        return requests.get("https://api.coingecko.com/api/v3/simple/price",
-                            params={"ids": ",".join(ids), "vs_currencies": "krw"}).json()
+        url = "https://api.coingecko.com/api/v3/simple/price"
+        params = {"ids": ",".join(ids), "vs_currencies": "krw"}
+        return requests.get(url, params=params).json()
     except:
         return {}
 
 # -------------------------------
-# 포맷 함수
+# 포맷 함수 (해외자산 소수점 대응 포함)
 # -------------------------------
 def _to_float(x):
     try:
@@ -134,35 +100,39 @@ def _to_float(x):
     except:
         return None
 
-def fmt_num(x):
+def fmt_num(x):      # 천단위 콤마, 소수점 없음
     v = _to_float(x)
     return "-" if v is None else f"{v:,.0f}"
 
-def fmt_num2(x):
+def fmt_num2(x):     # 천단위 콤마 + 소수점 2자리
     v = _to_float(x)
     return "-" if v is None else f"{v:,.2f}"
 
-def fmt_pct(x):
+def fmt_pct(x):      # 퍼센트 소수점 2자리
     v = _to_float(x)
     return "-" if v is None else f"{v:.2f}%"
 
 # =========================================================
-# 🪙 국내 투자자산
+# 🇰🇷 국내 투자자산
 # =========================================================
+if menu == "Table" and submenu == "국내 투자자산":
 
-if page == "국내 투자자산":
-
-    st.subheader("📋 국내 투자자산 평가 테이블")
+    st.subheader("📋 국내 투자자산 평가 테이블")  # 🔼 제목 먼저
 
     sheet = spreadsheet.worksheet("국내자산")
     rows = sheet.get_all_values()
     df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
 
     required = ["증권사","소유","종목명","종목코드","계좌구분","성격","보유수량","매수단가"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        st.error(f"국내자산 시트에 다음 컬럼이 없습니다: {missing}")
+        st.stop()
+
     df = df[required].copy()
     df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
-    df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
-    df["매수단가"] = pd.to_numeric(df["매수단가"].str.replace(",", ""), errors="coerce")
+    df["보유수량"] = pd.to_numeric(df["보유수량"].astype(str).str.replace(",", ""), errors="coerce")
+    df["매수단가"] = pd.to_numeric(df["매수단가"].astype(str).str.replace(",", ""), errors="coerce")
 
     df["매입총액 (KRW)"] = df["보유수량"] * df["매수단가"]
     df["현재가"] = [get_kr_price(t, n, local_gold_override) for t, n in zip(df["종목코드"], df["종목명"])]
@@ -182,21 +152,26 @@ if page == "국내 투자자산":
     </div>
     """, unsafe_allow_html=True)
 
-    display_df = df.copy()
+    show_cols = [
+        "증권사","소유","종목명","종목코드","계좌구분","성격",
+        "보유수량","매수단가","매입총액 (KRW)","현재가","평가총액 (KRW)","평가손익 (KRW)","수익률 (%)"
+    ]
+    display_df = df[show_cols].copy()
     for col in ["보유수량","매수단가","매입총액 (KRW)","현재가","평가총액 (KRW)","평가손익 (KRW)"]:
         display_df[col] = display_df[col].apply(fmt_num)
     display_df["수익률 (%)"] = display_df["수익률 (%)"].apply(fmt_pct)
 
     st.dataframe(display_df, use_container_width=True)
 
-# =========================================================
-# 🪙 해외 투자자산
-# =========================================================
 
-if page == "해외 투자자산":
+# =========================================================
+# 🌍 해외 투자자산
+# =========================================================
+if menu == "Table" and submenu == "해외 투자자산":
 
     usdkrw = get_usdkrw()
 
+    # 제목 + 환율 표시
     left, right = st.columns([4, 1])
     with left:
         st.subheader("📋 해외 투자자산 평가 테이블")
@@ -207,28 +182,40 @@ if page == "해외 투자자산":
             unsafe_allow_html=True
         )
 
+    # 🔹 통화 보기 옵션
     view_option = st.radio("표시 통화 옵션", ["모두 보기", "LC로 보기", "KRW로 보기"], horizontal=True)
 
+    # 데이터 불러오기
     sheet = spreadsheet.worksheet("해외자산")
     rows = sheet.get_all_values()
     df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
     df.rename(columns={"매입가": "매수단가"}, inplace=True)
 
     required = ["증권사","소유","종목티커","계좌구분","성격","보유수량","매수단가","매입환율"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        st.error(f"해외자산 시트에 다음 컬럼이 없습니다: {missing}")
+        st.stop()
+
     df = df[required].copy()
 
-    df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
-    df["매수단가"] = pd.to_numeric(df["매수단가"].str.replace(",", ""), errors="coerce")
-    df["매입환율"] = pd.to_numeric(df["매입환율"].str.replace(",", ""), errors="coerce")
+    # 숫자 변환
+    df["보유수량"] = pd.to_numeric(df["보유수량"].astype(str).str.replace(",", ""), errors="coerce")
+    df["매수단가"] = pd.to_numeric(df["매수단가"].astype(str).str.replace(",", ""), errors="coerce")
+    df["매입환율"] = pd.to_numeric(df["매입환율"].astype(str).str.replace(",", ""), errors="coerce")
 
+    # 계산
     df["매입총액(LC)"] = df["보유수량"] * df["매수단가"]
     df["매입총액(KRW)"] = df["매입총액(LC)"] * df["매입환율"]
 
     df["현재가"] = df["종목티커"].apply(get_us_price)
+
     df["평가총액(LC)"] = df["보유수량"] * df["현재가"]
-    df["평가총액(KRW)"] = df["평가총액(LC)"] * usdkrw
+    df["평가총액(KRW)"] = df["평가총액(LC)"] * (usdkrw if usdkrw else float("nan"))
+
     df["수익률(KRW)"] = (df["평가총액(KRW)"] / df["매입총액(KRW)"] - 1) * 100
 
+    # 상단 요약
     total_buy = df["매입총액(KRW)"].sum()
     total_eval = df["평가총액(KRW)"].sum()
     total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
@@ -241,7 +228,9 @@ if page == "해외 투자자산":
     </div>
     """, unsafe_allow_html=True)
 
+    # 표시용 데이터
     display_df = df.copy()
+
     display_df["매입환율"] = display_df["매입환율"].apply(fmt_num2)
     display_df["매입총액(LC)"] = display_df["매입총액(LC)"].apply(fmt_num2)
     display_df["매입총액(KRW)"] = display_df["매입총액(KRW)"].apply(fmt_num)
@@ -249,13 +238,22 @@ if page == "해외 투자자산":
     display_df["평가총액(KRW)"] = display_df["평가총액(KRW)"].apply(fmt_num)
     display_df["수익률(KRW)"] = display_df["수익률(KRW)"].apply(fmt_pct)
 
-    st.dataframe(display_df, use_container_width=True)
+    # 보기 옵션에 따른 컬럼 제어
+    base_cols = ["증권사","소유","종목티커","계좌구분","성격","보유수량","매수단가","매입환율","현재가"]
+
+    if view_option == "LC로 보기":
+        show_cols = base_cols + ["매입총액(LC)","평가총액(LC)"]
+    elif view_option == "KRW로 보기":
+        show_cols = base_cols + ["매입총액(KRW)","평가총액(KRW)","수익률(KRW)"]
+    else:
+        show_cols = base_cols + ["매입총액(LC)","매입총액(KRW)","평가총액(LC)","평가총액(KRW)","수익률(KRW)"]
+
+    st.dataframe(display_df[show_cols], use_container_width=True)
 
 # =========================================================
-# 🪙 가상자산
+# 🪙 가상자산 (수정 반영 버전)
 # =========================================================
-if page == "가상자산":
-
+if menu == "Table" and submenu == "가상자산":
     usdkrw = get_usdkrw()
 
     left, right = st.columns([4,1])
@@ -290,10 +288,7 @@ if page == "가상자산":
 
     def get_price(row):
         cid = row["coingecko_id"]
-        if row["통화"].upper() == "KRW":
-            return price_krw.get(cid, {}).get("krw")
-        else:
-            return price_usd.get(cid, {}).get("usd")
+        return price_krw.get(cid, {}).get("krw") if row["통화"].upper()=="KRW" else price_usd.get(cid, {}).get("usd")
 
     df["현재가"] = df.apply(get_price, axis=1)
     df["매입총액"] = df["수량(qty)"] * df["평균매수가(avg_price)"]
@@ -311,6 +306,7 @@ if page == "가상자산":
         axis=1
     )
 
+    # ✅ 수익률 추가
     df["수익률"] = (df["평가총액(KRW)"] / df["매입총액(KRW)"] - 1) * 100
 
     total_buy = df["매입총액(KRW)"].sum()
@@ -325,6 +321,7 @@ if page == "가상자산":
     </div>
     """, unsafe_allow_html=True)
 
+    # 표시용 포맷
     display_df = df.copy()
     display_df["수량(qty)"] = display_df["수량(qty)"].apply(lambda x: f"{x:,.9f}" if pd.notna(x) else "-")
 
@@ -333,15 +330,16 @@ if page == "가상자산":
 
     display_df["수익률"] = display_df["수익률"].apply(fmt_pct)
 
-    st.dataframe(display_df, use_container_width=True)
-
+    st.dataframe(display_df, use_container_width=True)    
+    
 # =========================================================
 # 💰 현금성자산
 # =========================================================
-if page == "현금성자산":
+if menu == "Table" and submenu == "현금성자산":
 
     usdkrw = get_usdkrw()
 
+    # 제목 + 환율 표시
     left, right = st.columns([4, 1])
     with left:
         st.subheader("📋 현금성자산 테이블")
@@ -356,6 +354,7 @@ if page == "현금성자산":
     rows = sheet.get_all_values()
     raw_df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
 
+    # 필요한 컬럼만 선택 (메모 자동 제거)
     required_cols = ["증권사", "소유", "계좌구분", "통화", "성격", "금액"]
     missing = [c for c in required_cols if c not in raw_df.columns]
     if missing:
@@ -363,14 +362,18 @@ if page == "현금성자산":
         st.stop()
 
     df = raw_df[required_cols].copy()
+
+    # 금액 숫자 변환
     df["금액"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce")
 
+    # 💡 금액(KRW) 계산
     df["금액(KRW)"] = df.apply(
         lambda r: r["금액"] if str(r["통화"]).upper() == "KRW"
         else (r["금액"] * usdkrw if usdkrw else float("nan")),
         axis=1
     )
 
+    # 상단 총액 표시 (KRW 기준)
     total_cash_krw = df["금액(KRW)"].sum()
 
     st.markdown(f"""
@@ -379,6 +382,7 @@ if page == "현금성자산":
     </div>
     """, unsafe_allow_html=True)
 
+    # 표시용 포맷
     display_df = df.copy()
     display_df["금액"] = display_df["금액"].apply(fmt_num)
     display_df["금액(KRW)"] = display_df["금액(KRW)"].apply(fmt_num)
