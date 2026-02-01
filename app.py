@@ -235,7 +235,6 @@ if menu == "Table" and submenu == "가상자산":
     rows = sheet.get_all_values()
     raw_df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
 
-    # ✅ 필요한 컬럼만 선택 (비고 자동 제거)
     required_cols = ["증권사","소유","코인","심볼","coingecko_id","통화","수량(qty)","평균매수가(avg_price)"]
     missing = [c for c in required_cols if c not in raw_df.columns]
     if missing:
@@ -273,6 +272,9 @@ if menu == "Table" and submenu == "가상자산":
         axis=1
     )
 
+    # ✅ 수익률 추가
+    df["수익률"] = (df["평가총액(KRW)"] / df["매입총액(KRW)"] - 1) * 100
+
     total_buy = df["매입총액(KRW)"].sum()
     total_eval = df["평가총액(KRW)"].sum()
     total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
@@ -288,7 +290,10 @@ if menu == "Table" and submenu == "가상자산":
     # 표시용 포맷
     display_df = df.copy()
     display_df["수량(qty)"] = display_df["수량(qty)"].apply(lambda x: f"{x:,.9f}" if pd.notna(x) else "-")
+
     for col in ["평균매수가(avg_price)", "현재가", "매입총액", "매입총액(KRW)", "평가총액", "평가총액(KRW)"]:
         display_df[col] = display_df[col].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
 
-    st.dataframe(display_df, use_container_width=True)
+    display_df["수익률"] = display_df["수익률"].apply(fmt_pct)
+
+    st.dataframe(display_df, use_container_width=True)    
