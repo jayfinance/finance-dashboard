@@ -95,6 +95,21 @@ if menu == "Table" and submenu == "국내 투자자산":
     df["평가손익 (KRW)"] = df["평가총액 (KRW)"] - df["매입총액 (KRW)"]
     df["수익률 (%)"] = (df["평가총액 (KRW)"] / df["매입총액 (KRW)"] - 1) * 100
 
+    # 합계 계산
+    total_buy = df["매입총액 (KRW)"].sum()
+    total_eval = df["평가총액 (KRW)"].sum()
+    total_profit = df["평가손익 (KRW)"].sum()
+    final_yield = (total_eval / total_buy - 1) * 100 if total_buy != 0 else 0
+
+    st.markdown(f"""
+    <div style='display: flex; gap: 32px; font-size: 1.1em; font-weight: bold;'>
+        <div>매입총액 합계: {fmt(total_buy)} 원</div>
+        <div>평가총액 합계: {fmt(total_eval)} 원</div>
+        <div>평가손익 합계: {fmt(total_profit)} 원</div>
+        <div>최종 수익률: {final_yield:.2f}%</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     def fmt(x): return "-" if pd.isna(x) else f"{x:,.0f}"
 
     st.subheader("📋 국내 투자자산 평가 테이블")
@@ -120,6 +135,10 @@ if menu == "Table" and submenu == "해외 투자자산":
     df.columns = df.columns.str.strip()
 
     df = df[["증권사","소유","종목티커","계좌구분","성격","보유수량","매수단가","매입환율"]]
+
+    if "매입환율" not in df.columns:
+        st.error("해외자산 시트에 '매입환율' 칼럼이 없습니다. 시트를 확인해 주세요.")
+        st.stop()
 
     df["보유수량"] = pd.to_numeric(df["보유수량"], errors="coerce")
     df["매수단가"] = pd.to_numeric(df["매수단가"], errors="coerce")
