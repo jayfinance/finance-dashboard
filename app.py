@@ -155,9 +155,24 @@ if menu == "Table" and submenu == "국내 투자자산":
 # =========================================================
 if menu == "Table" and submenu == "해외 투자자산":
 
-    st.subheader("📋 해외 투자자산 평가 테이블")  # 🔼 제목 먼저
-
     usdkrw = get_usdkrw()
+
+    # 🔼 제목 + 환율 우측 표시
+    left, right = st.columns([4, 1])
+    with left:
+        st.subheader("📋 해외 투자자산 평가 테이블")
+    with right:
+        if usdkrw is None:
+            st.markdown(
+                "<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: -</div>",
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>",
+                unsafe_allow_html=True
+            )
+
     view_option = st.radio("표시 통화 옵션", ["모두 보기", "LC로 보기", "KRW로 보기"], horizontal=True)
 
     sheet = spreadsheet.worksheet("해외자산")
