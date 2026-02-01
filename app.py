@@ -252,7 +252,7 @@ if page == "해외 투자자산":
     st.dataframe(display_df, use_container_width=True)
 
 # =========================================================
-# 🪙 가상자산
+# 🪙 가상자산 (안정화 최종 버전)
 # =========================================================
 if page == "가상자산":
 
@@ -283,10 +283,10 @@ if page == "가상자산":
     df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].astype(str).str.replace(",", ""), errors="coerce")
     df["평균매수가(avg_price)"] = pd.to_numeric(df["평균매수가(avg_price)"].astype(str).str.replace(",", ""), errors="coerce")
 
-    # 🔹 coingecko_id 정리 (공백, 대소문자)
+    # 🔹 coingecko_id 정리
     df["coingecko_id"] = df["coingecko_id"].astype(str).str.strip().str.lower()
 
-    # 🔹 통화 정리 (공백 제거 + 대문자)
+    # 🔹 통화 정리
     df["통화"] = df["통화"].astype(str).str.strip().str.upper()
     df["통화"] = df["통화"].replace({
         "원": "KRW",
@@ -295,19 +295,33 @@ if page == "가상자산":
         "US": "USD"
     })
 
-    # 🔹 모든 코인 ID 수집
+    # 🔹 모든 코인 ID
     all_ids = df["coingecko_id"].dropna().unique().tolist()
 
-    # 🔹 USD/KRW 한 번에 가져오기
-    price_map = {}
-    try:
-        res = requests.get(
-            "https://api.coingecko.com/api/v3/simple/price",
-            params={"ids": ",".join(all_ids), "vs_currencies": "usd,krw"}
-        ).json()
-        price_map = res
-    except:
-        st.warning("⚠ CoinGecko 가격 정보를 가져오지 못했습니다.")
+    # 🔹 CoinGecko 호출 (캐시 15분)
+    @st.cache_data(ttl=900)
+    def fetch_crypto_prices(ids):
+        try:
+            res = requests.get(
+                "https://api.coingecko.com/api/v3/simple/price",
+                params={"ids": ",".join(ids), "vs_currencies": "usd,krw"},
+                timeout=10
+            )
+            data = res.json()
+            if not data:  # rate limit 시 빈 dict 방지
+                return None
+            return data
+        except:
+            return None
+
+    price_map = fetch_crypto_prices(all_ids)
+
+    # 🔹 실패 시 이전 가격 유지
+    if price_map is None:
+        st.warning("⚠ CoinGecko 호출 제한 발생 — 이전 가격 사용")
+        price_map = st.session_state.get("last_crypto_prices", {})
+    else:
+        st.session_state["last_crypto_prices"] = price_map
 
     # 🔹 현재가 매칭
     def get_price(row):
@@ -318,8 +332,7 @@ if page == "가상자산":
             return info.get("krw")
         elif cur == "USD":
             return info.get("usd")
-        else:
-            return None
+        return None
 
     df["현재가"] = df.apply(get_price, axis=1)
 
