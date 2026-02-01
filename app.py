@@ -81,23 +81,32 @@ if menu == "Table" and submenu == "국내 투자자산":
         st.warning("국내자산 시트에 데이터가 없습니다.")
         st.stop()
 
+    df.columns = df.columns.str.strip()
+
     df = df[[
         "증권사", "소유", "종목명", "종목코드", "계좌구분",
         "성격", "보유수량", "매수단가"
     ]]
 
     df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
-    df["보유수량"] = pd.to_numeric(df["보유수량"], errors="coerce")
-    df["매수단가"] = pd.to_numeric(df["매수단가"], errors="coerce")
+    df["보유수량"] = pd.to_numeric(df["보유수량"].astype(str).str.replace(",", ""), errors="coerce")
+    df["매수단가"] = pd.to_numeric(df["매수단가"].astype(str).str.replace(",", ""), errors="coerce")
 
     df["매입총액 (KRW)"] = df["보유수량"] * df["매수단가"]
-    df["현재가"] = df.apply(lambda row: get_current_price(row["종목코드"], row["종목명"], local_gold_override), axis=1)
+
+    # 🔥 apply 대신 안전한 방식으로 현재가 계산
+    prices = []
+    for ticker, name in zip(df["종목코드"], df["종목명"]):
+        prices.append(get_current_price(ticker, name, local_gold_override))
+
+    df["현재가"] = pd.to_numeric(prices, errors="coerce")
+
     df["평가총액 (KRW)"] = df["보유수량"] * df["현재가"]
     df["평가손익 (KRW)"] = df["평가총액 (KRW)"] - df["매입총액 (KRW)"]
     df["수익률 (%)"] = (df["평가총액 (KRW)"] / df["매입총액 (KRW)"] - 1) * 100
 
     # -------------------------------
-    # 합계 및 수익률
+    # 합계
     # -------------------------------
     total_buy = df["매입총액 (KRW)"].sum()
     total_eval = df["평가총액 (KRW)"].sum()
@@ -107,10 +116,7 @@ if menu == "Table" and submenu == "국내 투자자산":
     def format_comma(x):
         if pd.isna(x):
             return "-"
-        try:
-            return f"{x:,.0f}"
-        except:
-            return "-"
+        return f"{x:,.0f}"
 
     st.markdown(f"""
     <div style='display: flex; gap: 32px; font-size: 1.1em; font-weight: bold;'>
@@ -122,7 +128,7 @@ if menu == "Table" and submenu == "국내 투자자산":
     """, unsafe_allow_html=True)
 
     # -------------------------------
-    # 표시용 포맷 (계산 df는 유지)
+    # 표시용 DataFrame
     # -------------------------------
     display_df = df.copy()
     display_df["보유수량"] = display_df["보유수량"].apply(format_comma)
