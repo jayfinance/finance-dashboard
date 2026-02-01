@@ -337,7 +337,18 @@ if menu == "Table" and submenu == "가상자산":
 # =========================================================
 if menu == "Table" and submenu == "현금성자산":
 
-    st.subheader("📋 현금성자산 테이블")
+    usdkrw = get_usdkrw()
+
+    # 제목 + 환율 표시
+    left, right = st.columns([4, 1])
+    with left:
+        st.subheader("📋 현금성자산 테이블")
+    with right:
+        st.markdown(
+            f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>"
+            if usdkrw else "현재 환율: -",
+            unsafe_allow_html=True
+        )
 
     sheet = spreadsheet.worksheet("현금성자산")
     rows = sheet.get_all_values()
@@ -355,17 +366,25 @@ if menu == "Table" and submenu == "현금성자산":
     # 금액 숫자 변환
     df["금액"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce")
 
-    # 상단 총액 표시
-    total_cash = df["금액"].sum()
+    # 💡 금액(KRW) 계산
+    df["금액(KRW)"] = df.apply(
+        lambda r: r["금액"] if str(r["통화"]).upper() == "KRW"
+        else (r["금액"] * usdkrw if usdkrw else float("nan")),
+        axis=1
+    )
+
+    # 상단 총액 표시 (KRW 기준)
+    total_cash_krw = df["금액(KRW)"].sum()
 
     st.markdown(f"""
     <div style='display:flex;gap:40px;font-size:1.1em;font-weight:bold;'>
-        <div>현금성자산 총액: {fmt_num(total_cash)} 원</div>
+        <div>현금성자산 총액 (KRW): {fmt_num(total_cash_krw)} 원</div>
     </div>
     """, unsafe_allow_html=True)
 
     # 표시용 포맷
     display_df = df.copy()
     display_df["금액"] = display_df["금액"].apply(fmt_num)
+    display_df["금액(KRW)"] = display_df["금액(KRW)"].apply(fmt_num)
 
     st.dataframe(display_df, use_container_width=True)
