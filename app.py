@@ -89,15 +89,28 @@ def get_crypto_prices_krw(ids):
     except:
         return {}
 
-def fmt_num(x):
-    if pd.isna(x): return "-"
-    try: return f"{x:,.0f}"
-    except: return "-"
+# -------------------------------
+# 포맷 함수 (해외자산 소수점 대응 포함)
+# -------------------------------
+def _to_float(x):
+    try:
+        if pd.isna(x):
+            return None
+        return float(str(x).replace(",", ""))
+    except:
+        return None
 
-def fmt_pct(x):
-    if pd.isna(x): return "-"
-    try: return f"{x:.2f}%"
-    except: return "-"
+def fmt_num(x):      # 천단위 콤마, 소수점 없음
+    v = _to_float(x)
+    return "-" if v is None else f"{v:,.0f}"
+
+def fmt_num2(x):     # 천단위 콤마 + 소수점 2자리
+    v = _to_float(x)
+    return "-" if v is None else f"{v:,.2f}"
+
+def fmt_pct(x):      # 퍼센트 소수점 2자리
+    v = _to_float(x)
+    return "-" if v is None else f"{v:.2f}%"
 
 # =========================================================
 # 🇰🇷 국내 투자자산
