@@ -24,37 +24,38 @@ spreadsheet = client.open("FinanceRaw")
 # =========================================================
 st.sidebar.markdown("## 📂 메뉴")
 section = st.sidebar.radio("대분류", ["Chart", "Table"])
+
 page = None
 
 if section == "Chart":
     with st.sidebar.expander("자산 - Overview Chart", expanded=True):
-        page = st.radio("선택", [
-            "국내 투자자산 차트",
-            "해외 투자자산 차트",
-            "가상자산 차트",
-            "현금성자산 차트"
-        ], key="chart_assets")
+        page = st.radio(
+            "선택",
+            ["국내 투자자산 차트", "해외 투자자산 차트", "가상자산 차트", "현금성자산 차트"],
+            key="chart_assets"
+        )
 
     with st.sidebar.expander("배당"):
-        page = st.radio("선택", [
-            "국내 배당 차트",
-            "해외 배당 차트"
-        ], key="chart_div")
+        page = st.radio(
+            "선택",
+            ["국내 배당 차트", "해외 배당 차트"],
+            key="chart_div"
+        )
 
 elif section == "Table":
     with st.sidebar.expander("자산", expanded=True):
-        page = st.radio("선택", [
-            "국내 투자자산",
-            "해외 투자자산",
-            "가상자산",
-            "현금성자산"
-        ], key="table_assets")
+        page = st.radio(
+            "선택",
+            ["국내 투자자산", "해외 투자자산", "가상자산", "현금성자산"],
+            key="table_assets"
+        )
 
     with st.sidebar.expander("배당"):
-        page = st.radio("선택", [
-            "국내 배당",
-            "해외 배당"
-        ], key="table_div")
+        page = st.radio(
+            "선택",
+            ["국내 배당", "해외 배당"],
+            key="table_div"
+        )
 
 st.sidebar.markdown("### 🟡 금(보정 옵션)")
 local_gold_override = st.sidebar.number_input(
