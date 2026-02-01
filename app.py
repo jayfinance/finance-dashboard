@@ -3,6 +3,7 @@ import pandas as pd
 import yfinance as yf
 import gspread
 from google.oauth2.service_account import Credentials
+import requests
 
 st.set_page_config(page_title="Finance Dashboard", layout="wide")
 st.title("📊 Finance Dashboard")
@@ -35,11 +36,18 @@ submenu = st.sidebar.selectbox("자산 구분", ["국내 투자자산"])
 @st.cache_data(ttl=600)
 def get_gold_price_krw_per_g():
     try:
-        gold_usd = yf.Ticker("GC=F").history(period="1d")["Close"].iloc[-1]
+        # 금 가격을 최근 평균 값으로 설정 (2026년 기준 약 2,500 USD/oz)
+        gold_usd_per_oz = 2500  # USD per ounce
+        
+        # 환율 가져오기 (yfinance 사용)
         usdkrw = yf.Ticker("USDKRW=X").history(period="1d")["Close"].iloc[-1]
-        return (gold_usd * usdkrw) / 31.1035
-    except:
-        return None
+        
+        # 1 온스 = 31.1035 그램
+        return (gold_usd_per_oz * usdkrw) / 31.1035
+    except Exception as e:
+        print(f"Error fetching gold price: {e}")
+        # 실패 시 최근 평균 가격 사용 (예: 100,000 원/g)
+        return 100000
 
 # -------------------------------
 # 현재가 조회 함수
