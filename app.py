@@ -59,15 +59,13 @@ def get_gold_price_krw_per_g():
 @st.cache_data(ttl=600)
 def get_current_price(ticker, name, gold_override):
     try:
-        # 금현물 처리
         if name == "금현물" or ticker.upper() == "GOLD":
             if gold_override and gold_override > 0:
                 return float(gold_override)
             return get_gold_price_krw_per_g()
 
         ticker_yf = f"{ticker}.KS"
-        price = yf.Ticker(ticker_yf).history(period="1d")["Close"].iloc[-1]
-        return price
+        return yf.Ticker(ticker_yf).history(period="1d")["Close"].iloc[-1]
     except:
         return None
 
@@ -107,8 +105,10 @@ if menu == "Table" and submenu == "국내 투자자산":
     final_yield = (total_eval / total_buy - 1) * 100 if total_buy != 0 else 0
 
     def format_comma(x):
+        if pd.isna(x):
+            return "-"
         try:
-            return f"{int(x):,}"
+            return f"{x:,.0f}"
         except:
             return "-"
 
@@ -122,15 +122,16 @@ if menu == "Table" and submenu == "국내 투자자산":
     """, unsafe_allow_html=True)
 
     # -------------------------------
-    # 표시용 포맷
+    # 표시용 포맷 (계산 df는 유지)
     # -------------------------------
-    df["보유수량"] = df["보유수량"].apply(format_comma)
-    df["매수단가"] = df["매수단가"].apply(format_comma)
-    df["매입총액 (KRW)"] = df["매입총액 (KRW)"].apply(format_comma)
-    df["현재가"] = df["현재가"].apply(format_comma)
-    df["평가총액 (KRW)"] = df["평가총액 (KRW)"].apply(format_comma)
-    df["평가손익 (KRW)"] = df["평가손익 (KRW)"].apply(format_comma)
-    df["수익률 (%)"] = df["수익률 (%)"].apply(lambda x: f"{x:.2f}%" if pd.notnull(x) else "-")
+    display_df = df.copy()
+    display_df["보유수량"] = display_df["보유수량"].apply(format_comma)
+    display_df["매수단가"] = display_df["매수단가"].apply(format_comma)
+    display_df["매입총액 (KRW)"] = display_df["매입총액 (KRW)"].apply(format_comma)
+    display_df["현재가"] = display_df["현재가"].apply(format_comma)
+    display_df["평가총액 (KRW)"] = display_df["평가총액 (KRW)"].apply(format_comma)
+    display_df["평가손익 (KRW)"] = display_df["평가손익 (KRW)"].apply(format_comma)
+    display_df["수익률 (%)"] = display_df["수익률 (%)"].apply(lambda x: f"{x:.2f}%" if pd.notnull(x) else "-")
 
     st.subheader("📋 국내 투자자산 평가 테이블")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(display_df, use_container_width=True)
