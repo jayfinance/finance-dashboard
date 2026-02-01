@@ -153,47 +153,31 @@ if menu == "Table" and submenu == "국내 투자자산":
 # =========================================================
 # 🌍 해외 투자자산
 # =========================================================
+
 if menu == "Table" and submenu == "해외 투자자산":
 
     usdkrw = get_usdkrw()
 
-    # 🔼 제목 + 환율 우측 표시
     left, right = st.columns([4, 1])
     with left:
         st.subheader("📋 해외 투자자산 평가 테이블")
     with right:
-        if usdkrw is None:
-            st.markdown(
-                "<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: -</div>",
-                unsafe_allow_html=True
-            )
-        else:
-            st.markdown(
-                f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>",
-                unsafe_allow_html=True
-            )
-
-    view_option = st.radio("표시 통화 옵션", ["모두 보기", "LC로 보기", "KRW로 보기"], horizontal=True)
+        st.markdown(f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>" if usdkrw else "현재 환율: -", unsafe_allow_html=True)
 
     sheet = spreadsheet.worksheet("해외자산")
     rows = sheet.get_all_values()
     df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
     df.rename(columns={"매입가": "매수단가"}, inplace=True)
 
-    required = ["증권사","소유","종목티커","계좌구분","성격","보유수량","매수단가","매입환율"]
-    df = df[required].copy()
-
-    df["보유수량"] = pd.to_numeric(df["보유수량"].astype(str).str.replace(",", ""), errors="coerce")
-    df["매수단가"] = pd.to_numeric(df["매수단가"].astype(str).str.replace(",", ""), errors="coerce")
-    df["매입환율"] = pd.to_numeric(df["매입환율"].astype(str).str.replace(",", ""), errors="coerce")
+    df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
+    df["매수단가"] = pd.to_numeric(df["매수단가"].str.replace(",", ""), errors="coerce")
+    df["매입환율"] = pd.to_numeric(df["매입환율"].str.replace(",", ""), errors="coerce")
 
     df["매입총액(LC)"] = df["보유수량"] * df["매수단가"]
     df["매입총액(KRW)"] = df["매입총액(LC)"] * df["매입환율"]
-
     df["현재가"] = df["종목티커"].apply(get_us_price)
     df["평가총액(LC)"] = df["보유수량"] * df["현재가"]
-    df["평가총액(KRW)"] = df["평가총액(LC)"] * (usdkrw if usdkrw else float("nan"))
-
+    df["평가총액(KRW)"] = df["평가총액(LC)"] * usdkrw
     df["수익률(KRW)"] = (df["평가총액(KRW)"] / df["매입총액(KRW)"] - 1) * 100
 
     total_buy = df["매입총액(KRW)"].sum()
@@ -208,7 +192,16 @@ if menu == "Table" and submenu == "해외 투자자산":
     </div>
     """, unsafe_allow_html=True)
 
-    st.dataframe(df, use_container_width=True)
+    display_df = df.copy()
+    display_df["매입환율"] = display_df["매입환율"].apply(fmt_num2)
+    display_df["매입총액(LC)"] = display_df["매입총액(LC)"].apply(fmt_num2)
+    display_df["매입총액(KRW)"] = display_df["매입총액(KRW)"].apply(fmt_num)
+    display_df["평가총액(LC)"] = display_df["평가총액(LC)"].apply(fmt_num2)
+    display_df["평가총액(KRW)"] = display_df["평가총액(KRW)"].apply(fmt_num)
+    display_df["수익률(KRW)"] = display_df["수익률(KRW)"].apply(fmt_pct)
+
+    st.dataframe(display_df, use_container_width=True)
+
 
 # =========================================================
 # 🪙 가상자산 (수정 반영 버전)
