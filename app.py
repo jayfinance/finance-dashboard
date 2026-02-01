@@ -103,31 +103,92 @@ def fmt_pct(x):
     except: return "-"
 
 # =========================================================
+# 🇰🇷 국내 투자자산
+# =========================================================
+if menu == "Table" and submenu == "국내 투자자산":
+    sheet = spreadsheet.worksheet("국내자산")
+    rows = sheet.get_all_values()
+    df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+
+    required = ["증권사","소유","종목명","종목코드","계좌구분","성격","보유수량","매수단가"]
+    df = df[required].copy()
+
+    df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
+    df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
+    df["매수단가"] = pd.to_numeric(df["매수단가"].str.replace(",", ""), errors="coerce")
+
+    df["매입총액"] = df["보유수량"] * df["매수단가"]
+    df["현재가"] = [get_kr_price(t, n, local_gold_override) for t, n in zip(df["종목코드"], df["종목명"])]
+    df["평가총액"] = df["보유수량"] * df["현재가"]
+    df["수익률"] = (df["평가총액"] / df["매입총액"] - 1) * 100
+
+    total_buy = df["매입총액"].sum()
+    total_eval = df["평가총액"].sum()
+    total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
+
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-weight:bold;'>
+        <div>국내 자산 매입총액: {fmt_num(total_buy)} 원</div>
+        <div>국내 자산 평가총액: {fmt_num(total_eval)} 원</div>
+        <div>국내 자산 전체 수익률: {fmt_pct(total_yield)}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.dataframe(df, use_container_width=True)
+
+# =========================================================
+# 🌍 해외 투자자산
+# =========================================================
+if menu == "Table" and submenu == "해외 투자자산":
+    usdkrw = get_usdkrw()
+
+    sheet = spreadsheet.worksheet("해외자산")
+    rows = sheet.get_all_values()
+    df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+    df.rename(columns={"매입가": "매수단가"}, inplace=True)
+
+    df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
+    df["매수단가"] = pd.to_numeric(df["매수단가"].str.replace(",", ""), errors="coerce")
+    df["매입환율"] = pd.to_numeric(df["매입환율"].str.replace(",", ""), errors="coerce")
+
+    df["매입총액(LC)"] = df["보유수량"] * df["매수단가"]
+    df["현재가"] = df["종목티커"].apply(get_us_price)
+    df["평가총액(KRW)"] = df["보유수량"] * df["현재가"] * usdkrw
+
+    total_buy = (df["매입총액(LC)"] * df["매입환율"]).sum()
+    total_eval = df["평가총액(KRW)"].sum()
+    total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
+
+    left, right = st.columns([4,1])
+    with left: st.subheader("📋 해외 투자자산 평가 테이블")
+    with right: st.markdown(f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>", unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-weight:bold;'>
+        <div>해외 자산 매입총액: {fmt_num(total_buy)} 원</div>
+        <div>해외 자산 평가총액: {fmt_num(total_eval)} 원</div>
+        <div>해외 자산 전체 수익률: {fmt_pct(total_yield)}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.dataframe(df, use_container_width=True)
+
+# =========================================================
 # 🪙 가상자산
 # =========================================================
 if menu == "Table" and submenu == "가상자산":
     usdkrw = get_usdkrw()
 
     left, right = st.columns([4,1])
-    with left:
-        st.subheader("📋 가상자산 평가 테이블")
-    with right:
-        st.markdown(
-            f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>" if usdkrw
-            else "<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: -</div>",
-            unsafe_allow_html=True
-        )
+    with left: st.subheader("📋 가상자산 평가 테이블")
+    with right: st.markdown(f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>", unsafe_allow_html=True)
 
     sheet = spreadsheet.worksheet("가상자산")
     rows = sheet.get_all_values()
     df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
 
-    # ❌ 비고 컬럼 제거
     if "비고" in df.columns:
         df.drop(columns=["비고"], inplace=True)
-
-    required = ["증권사","소유","코인","심볼","coingecko_id","통화","수량(qty)","평균매수가(avg_price)"]
-    df = df[required].copy()
 
     df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].str.replace(",", ""), errors="coerce")
     df["평균매수가(avg_price)"] = pd.to_numeric(df["평균매수가(avg_price)"].str.replace(",", ""), errors="coerce")
@@ -140,19 +201,12 @@ if menu == "Table" and submenu == "가상자산":
 
     def get_price(row):
         cid = row["coingecko_id"]
-        currency = row["통화"].upper()
-        if currency == "KRW":
-            return price_krw.get(cid, {}).get("krw")
-        return price_usd.get(cid, {}).get("usd")
+        return price_krw.get(cid, {}).get("krw") if row["통화"].upper()=="KRW" else price_usd.get(cid, {}).get("usd")
 
     df["현재가"] = df.apply(get_price, axis=1)
-
     df["매입총액"] = df["수량(qty)"] * df["평균매수가(avg_price)"]
     df["평가총액"] = df["수량(qty)"] * df["현재가"]
-    df["평가총액(KRW)"] = df.apply(
-        lambda r: r["평가총액"] if r["통화"].upper()=="KRW" else r["평가총액"] * usdkrw,
-        axis=1
-    )
+    df["평가총액(KRW)"] = df.apply(lambda r: r["평가총액"] if r["통화"].upper()=="KRW" else r["평가총액"]*usdkrw, axis=1)
 
     total_buy = df["매입총액"].sum()
     total_eval = df["평가총액(KRW)"].sum()
@@ -166,10 +220,8 @@ if menu == "Table" and submenu == "가상자산":
     </div>
     """, unsafe_allow_html=True)
 
-    # 표시 포맷 적용
     display_df = df.copy()
     display_df["수량(qty)"] = display_df["수량(qty)"].apply(lambda x: f"{x:,.9f}" if pd.notna(x) else "-")
-
     for col in ["평균매수가(avg_price)", "현재가", "매입총액", "평가총액", "평가총액(KRW)"]:
         display_df[col] = display_df[col].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
 
