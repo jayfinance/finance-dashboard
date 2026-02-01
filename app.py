@@ -279,34 +279,63 @@ if page == "가상자산":
 
     df = raw_df[required_cols].copy()
 
-    df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].str.replace(",", ""), errors="coerce")
-    df["평균매수가(avg_price)"] = pd.to_numeric(df["평균매수가(avg_price)"].str.replace(",", ""), errors="coerce")
+    # 🔹 숫자 정리
+    df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].astype(str).str.replace(",", ""), errors="coerce")
+    df["평균매수가(avg_price)"] = pd.to_numeric(df["평균매수가(avg_price)"].astype(str).str.replace(",", ""), errors="coerce")
 
-    ids_usd = df[df["통화"].str.upper()=="USD"]["coingecko_id"].dropna().unique().tolist()
-    ids_krw = df[df["통화"].str.upper()=="KRW"]["coingecko_id"].dropna().unique().tolist()
+    # 🔹 coingecko_id 정리 (공백, 대소문자)
+    df["coingecko_id"] = df["coingecko_id"].astype(str).str.strip().str.lower()
 
-    price_usd = get_crypto_prices_usd(ids_usd) if ids_usd else {}
-    price_krw = get_crypto_prices_krw(ids_krw) if ids_krw else {}
+    # 🔹 통화 정리 (공백 제거 + 대문자)
+    df["통화"] = df["통화"].astype(str).str.strip().str.upper()
+    df["통화"] = df["통화"].replace({
+        "원": "KRW",
+        "KR": "KRW",
+        "달러": "USD",
+        "US": "USD"
+    })
 
+    # 🔹 모든 코인 ID 수집
+    all_ids = df["coingecko_id"].dropna().unique().tolist()
+
+    # 🔹 USD/KRW 한 번에 가져오기
+    price_map = {}
+    try:
+        res = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price",
+            params={"ids": ",".join(all_ids), "vs_currencies": "usd,krw"}
+        ).json()
+        price_map = res
+    except:
+        st.warning("⚠ CoinGecko 가격 정보를 가져오지 못했습니다.")
+
+    # 🔹 현재가 매칭
     def get_price(row):
         cid = row["coingecko_id"]
-        if row["통화"].upper() == "KRW":
-            return price_krw.get(cid, {}).get("krw")
+        cur = row["통화"]
+        info = price_map.get(cid, {})
+        if cur == "KRW":
+            return info.get("krw")
+        elif cur == "USD":
+            return info.get("usd")
         else:
-            return price_usd.get(cid, {}).get("usd")
+            return None
 
     df["현재가"] = df.apply(get_price, axis=1)
+
+    # 계산
     df["매입총액"] = df["수량(qty)"] * df["평균매수가(avg_price)"]
 
     df["매입총액(KRW)"] = df.apply(
-        lambda r: r["매입총액"] if r["통화"].upper()=="KRW"
+        lambda r: r["매입총액"] if r["통화"]=="KRW"
         else (r["매입총액"] * usdkrw if usdkrw else float("nan")),
         axis=1
     )
 
     df["평가총액"] = df["수량(qty)"] * df["현재가"]
+
     df["평가총액(KRW)"] = df.apply(
-        lambda r: r["평가총액"] if r["통화"].upper()=="KRW"
+        lambda r: r["평가총액"] if r["통화"]=="KRW"
         else (r["평가총액"] * usdkrw if usdkrw else float("nan")),
         axis=1
     )
@@ -325,6 +354,7 @@ if page == "가상자산":
     </div>
     """, unsafe_allow_html=True)
 
+    # 표시용 포맷
     display_df = df.copy()
     display_df["수량(qty)"] = display_df["수량(qty)"].apply(lambda x: f"{x:,.9f}" if pd.notna(x) else "-")
 
