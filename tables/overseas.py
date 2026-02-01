@@ -59,4 +59,13 @@ def render(spreadsheet, get_usdkrw, get_us_price):
     display_df["평가총액(KRW)"] = display_df["평가총액(KRW)"].apply(fmt_num)
     display_df["수익률(KRW)"] = display_df["수익률(KRW)"].apply(fmt_pct)
 
-    st.dataframe(display_df, use_container_width=True)
+    base_cols = ["증권사","소유","종목티커","계좌구분","성격","보유수량","매수단가","현재가"]
+
+    if view_option == "LC로 보기":
+        cols = base_cols + ["매입총액(LC)","평가총액(LC)"]
+    elif view_option == "KRW로 보기":
+        cols = base_cols + ["매입총액(KRW)","평가총액(KRW)","수익률(KRW)"]
+    else:
+        cols = base_cols + ["매입총액(LC)","평가총액(LC)","매입총액(KRW)","평가총액(KRW)","수익률(KRW)"]
+
+    st.dataframe(display_df[cols], use_container_width=True)
