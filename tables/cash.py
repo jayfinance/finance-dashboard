@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import gspread  # 🔥 반드시 필요
+import inspect
+st.write("DEBUG cash module path:", inspect.getfile(inspect.currentframe()))
 
 def _to_float(x):
     try:
