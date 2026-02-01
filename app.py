@@ -23,7 +23,7 @@ spreadsheet = client.open("FinanceRaw")
 # 사이드바
 # -------------------------------
 menu = st.sidebar.radio("메뉴 선택", ["Table"])
-submenu = st.sidebar.selectbox("자산 구분", ["국내 투자자산", "해외 투자자산", "가상자산"])
+submenu = st.sidebar.selectbox("자산 구분", ["국내 투자자산", "해외 투자자산", "가상자산", "현금성자산"])
 
 st.sidebar.markdown("### 🟡 금(보정 옵션)")
 local_gold_override = st.sidebar.number_input(
@@ -297,3 +297,41 @@ if menu == "Table" and submenu == "가상자산":
     display_df["수익률"] = display_df["수익률"].apply(fmt_pct)
 
     st.dataframe(display_df, use_container_width=True)    
+    
+# =========================================================
+# 💰 현금성자산
+# =========================================================
+if menu == "Table" and submenu == "현금성자산":
+
+    st.subheader("📋 현금성자산 테이블")
+
+    sheet = spreadsheet.worksheet("현금성자산")
+    rows = sheet.get_all_values()
+    raw_df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+
+    # 필요한 컬럼만 선택 (메모 자동 제거)
+    required_cols = ["증권사", "소유", "계좌구분", "통화", "성격", "금액"]
+    missing = [c for c in required_cols if c not in raw_df.columns]
+    if missing:
+        st.error(f"현금성자산 시트에 다음 컬럼이 없습니다: {missing}")
+        st.stop()
+
+    df = raw_df[required_cols].copy()
+
+    # 금액 숫자 변환
+    df["금액"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce")
+
+    # 상단 총액 표시
+    total_cash = df["금액"].sum()
+
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-size:1.1em;font-weight:bold;'>
+        <div>현금성자산 총액: {fmt_num(total_cash)} 원</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 표시용 포맷
+    display_df = df.copy()
+    display_df["금액"] = display_df["금액"].apply(fmt_num)
+
+    st.dataframe(display_df, use_container_width=True)
