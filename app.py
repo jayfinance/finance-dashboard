@@ -187,7 +187,7 @@ elif page == "부채":
     debt_table(spreadsheet, get_usdkrw)
 
 elif page == "종합":
-    total_table(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override)
+    total_table(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override, get_jpykrw)
 
 elif page == "추이":
     trend_table(spreadsheet)
