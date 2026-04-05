@@ -26,6 +26,12 @@ def render(spreadsheet, get_usdkrw):
     df["매입가"] = pd.to_numeric(df["매입가"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
     df["현재 시세"] = pd.to_numeric(df["현재 시세"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
 
+    # ── 소유 필터 ──────────────────────────────────────────
+    owners = sorted(df["소유"].dropna().unique().tolist())
+    sel_owners = st.multiselect("소유 필터", owners, default=owners, key="filter_property_owner")
+    if sel_owners:
+        df = df[df["소유"].isin(sel_owners)].reset_index(drop=True)
+
     df["평가손익(KRW)"] = df["현재 시세"] - df["매입가"]
     df["수익률(%)"] = (df["평가손익(KRW)"] / df["매입가"].replace(0, float("nan"))) * 100
 

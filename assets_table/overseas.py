@@ -58,6 +58,12 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
 
     df = df.dropna(subset=["보유수량", "매수단가"]).reset_index(drop=True)
 
+    # ── 소유 필터 ──────────────────────────────────────────
+    owners = sorted(df["소유"].dropna().unique().tolist())
+    sel_owners = st.multiselect("소유 필터", owners, default=owners, key="filter_overseas_owner")
+    if sel_owners:
+        df = df[df["소유"].isin(sel_owners)].reset_index(drop=True)
+
     # ── 화폐별 현재 환율 매핑 ──────────────────────────────
     rate_map = {"USD": usdkrw, "JPY": jpykrw}
     df["현재환율"] = df["화폐"].str.upper().str.strip().map(rate_map)

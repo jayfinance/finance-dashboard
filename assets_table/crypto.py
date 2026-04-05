@@ -29,6 +29,12 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
         "원": "KRW", "KR": "KRW", "달러": "USD", "US": "USD"
     })
 
+    # ── 소유 필터 ──────────────────────────────────────────
+    owners = sorted(df["소유"].dropna().unique().tolist())
+    sel_owners = st.multiselect("소유 필터", owners, default=owners, key="filter_crypto_owner")
+    if sel_owners:
+        df = df[df["소유"].isin(sel_owners)].reset_index(drop=True)
+
     all_ids = df["coingecko_id"].dropna().unique().tolist()
 
     price_map = get_crypto_prices(tuple(all_ids))

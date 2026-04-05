@@ -32,6 +32,12 @@ def render(spreadsheet, get_kr_price, gold_override):
     # 빈 행 제거 (보유수량·매수단가 없는 행)
     df = df.dropna(subset=["보유수량", "매수단가"]).reset_index(drop=True)
 
+    # ── 소유 필터 ──────────────────────────────────────────
+    owners = sorted(df["소유"].dropna().unique().tolist())
+    sel_owners = st.multiselect("소유 필터", owners, default=owners, key="filter_domestic_owner")
+    if sel_owners:
+        df = df[df["소유"].isin(sel_owners)].reset_index(drop=True)
+
     # ── 매입총액 계산 ──────────────────────────────────────
     df["매입총액 (KRW)"] = df["보유수량"] * df["매수단가"]
 
