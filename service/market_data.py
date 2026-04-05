@@ -1,6 +1,5 @@
 import yfinance as yf
 import streamlit as st
-import requests
 
 # -------------------------------
 # 환율
@@ -52,33 +51,5 @@ def get_us_price(ticker):
     try:
         data = yf.Ticker(ticker).history(period="1d")["Close"]
         return float(data.iloc[-1]) if not data.empty else None
-    except Exception:
-        return None
-
-
-# -------------------------------
-# 가상자산
-# -------------------------------
-@st.cache_data(ttl=300)
-def get_crypto_prices(ids):
-    try:
-        if not ids:
-            return {}
-
-        res = requests.get(
-            "https://api.coingecko.com/api/v3/simple/price",
-            params={"ids": ",".join(ids), "vs_currencies": "usd,krw"},
-            timeout=10
-        )
-
-        if res.status_code != 200:
-            return None
-
-        data = res.json()
-        if not isinstance(data, dict) or not data:
-            return None
-
-        return data
-
     except Exception:
         return None

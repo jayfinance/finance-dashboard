@@ -1,46 +1,17 @@
 import streamlit as st
 import pandas as pd
 import gspread
+from ui.formatters import fmt_num
+from ui.components import exchange_rate_header
+from config import SHEET_NAMES
 
-
-def _to_float(x):
-    try:
-        if x is None:
-            return None
-        if isinstance(x, str):
-            x = x.replace(",", "").replace("%", "").strip()
-            if x == "":
-                return None
-        if pd.isna(x):
-            return None
-        return float(x)
-    except Exception:
-        return None
-
-def fmt_num_local(x):
-    v = _to_float(x)
-    return "-" if v is None else f"{v:,.0f}"
 
 def render(spreadsheet, get_usdkrw):
     usdkrw = get_usdkrw()
-
-    left, right = st.columns([4, 1])
-    with left:
-        st.subheader("📋 현금성자산 테이블")
-    with right:
-        if usdkrw is not None:
-            st.markdown(
-                f"<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: {usdkrw:,.2f} KRW/USD</div>",
-                unsafe_allow_html=True
-            )
-        else:
-            st.markdown(
-                "<div style='text-align:right;font-size:0.9em;color:gray;'>현재 환율: -</div>",
-                unsafe_allow_html=True
-            )
+    exchange_rate_header("📋 현금성자산 테이블", usdkrw)
 
     try:
-        sheet = spreadsheet.worksheet("현금성자산")
+        sheet = spreadsheet.worksheet(SHEET_NAMES["cash"])
     except gspread.exceptions.WorksheetNotFound:
         st.error("❌ '현금성자산' 시트를 찾을 수 없습니다.")
         st.write("사용 가능한 시트:", [ws.title for ws in spreadsheet.worksheets()])
@@ -76,12 +47,12 @@ def render(spreadsheet, get_usdkrw):
 
     st.markdown(f"""
     <div style='display:flex;gap:40px;font-size:1.1em;font-weight:bold;'>
-        <div>현금성자산 총액 (KRW): {fmt_num_local(total_cash_krw)} 원</div>
+        <div>현금성자산 총액 (KRW): {fmt_num(total_cash_krw)} 원</div>
     </div>
     """, unsafe_allow_html=True)
 
     display_df = df.copy()
-    display_df["금액"] = display_df["금액"].apply(fmt_num_local)
-    display_df["금액(KRW)"] = display_df["금액(KRW)"].apply(fmt_num_local)
+    display_df["금액"] = display_df["금액"].apply(fmt_num)
+    display_df["금액(KRW)"] = display_df["금액(KRW)"].apply(fmt_num)
 
     st.dataframe(display_df, use_container_width=True)
