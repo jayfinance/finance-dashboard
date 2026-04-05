@@ -54,6 +54,33 @@ st.title("📊 Finance Dashboard")
 spreadsheet = get_spreadsheet()
 
 # =========================================================
+# 세션 상태 초기화
+# =========================================================
+# 어떤 서브 섹션(자산 vs 배당)이 마지막으로 활성화됐는지 추적
+_defaults = {
+    "table_active_section": "assets",
+    "chart_active_section": "assets",
+}
+for k, v in _defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
+
+# =========================================================
+# 사이드바 콜백 — 클릭된 라디오 그룹을 활성으로 기록
+# =========================================================
+def _on_table_assets():
+    st.session_state["table_active_section"] = "assets"
+
+def _on_table_div():
+    st.session_state["table_active_section"] = "div"
+
+def _on_chart_assets():
+    st.session_state["chart_active_section"] = "assets"
+
+def _on_chart_div():
+    st.session_state["chart_active_section"] = "div"
+
+# =========================================================
 # 사이드바 메뉴
 # =========================================================
 st.sidebar.markdown("## 📂 메뉴")
@@ -63,7 +90,7 @@ page = None
 
 if section == "Table":
     with st.sidebar.expander("💼 자산", expanded=True):
-        page = st.radio(
+        st.radio(
             "선택",
             [
                 "국내 투자자산",
@@ -76,20 +103,25 @@ if section == "Table":
                 "종합",
                 "추이",
             ],
-            key="table_assets"
+            key="table_assets",
+            on_change=_on_table_assets,
         )
     with st.sidebar.expander("💰 배당"):
-        div_page = st.radio(
+        st.radio(
             "선택",
             ["국내 배당", "해외 배당"],
-            key="table_div"
+            key="table_div",
+            on_change=_on_table_div,
         )
-        if div_page:
-            page = div_page
+
+    if st.session_state["table_active_section"] == "assets":
+        page = st.session_state.get("table_assets", "국내 투자자산")
+    else:
+        page = st.session_state.get("table_div", "국내 배당")
 
 elif section == "Chart":
     with st.sidebar.expander("💼 자산 차트", expanded=True):
-        page = st.radio(
+        st.radio(
             "선택",
             [
                 "국내 투자자산 차트",
@@ -102,16 +134,21 @@ elif section == "Chart":
                 "종합 차트",
                 "추이 차트",
             ],
-            key="chart_assets"
+            key="chart_assets",
+            on_change=_on_chart_assets,
         )
     with st.sidebar.expander("💰 배당 차트"):
-        div_chart_page = st.radio(
+        st.radio(
             "선택",
             ["국내 배당 차트", "해외 배당 차트"],
-            key="chart_div"
+            key="chart_div",
+            on_change=_on_chart_div,
         )
-        if div_chart_page:
-            page = div_chart_page
+
+    if st.session_state["chart_active_section"] == "assets":
+        page = st.session_state.get("chart_assets", "국내 투자자산 차트")
+    else:
+        page = st.session_state.get("chart_div", "국내 배당 차트")
 
 # -------------------------------
 # 금 수동 입력 옵션
@@ -122,7 +159,7 @@ gold_override = st.sidebar.number_input(
     "국내 금 시세 수동 입력 (원/g)\n0 입력 시 국제 금 환산값 사용",
     min_value=0,
     step=1000,
-    value=0
+    value=0,
 )
 
 # =========================================================
