@@ -78,14 +78,36 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
     df["수익률(LC)"] = (df["평가총액(LC)"] / df["매입총액(LC)"] - 1) * 100
     df["수익률(KRW)"] = (df["평가총액(KRW)"] / df["매입총액(KRW)"] - 1) * 100
 
-    # ── 합계 (KRW 기준) ────────────────────────────────────
-    total_buy  = df["매입총액(KRW)"].sum()
-    total_eval = df["평가총액(KRW)"].sum()
-    total_pl   = df["평가손익(KRW)"].sum()
-    total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
-
-    pl_color = "#ef553b" if total_pl < 0 else "#00cc96"
-    st.markdown(f"""
+    # ── 합계 표시 ──────────────────────────────────────────
+    if view_option == "LC로 보기":
+        # 화폐별 소계
+        currencies = df["화폐"].str.upper().str.strip().unique()
+        parts = []
+        for cur in sorted(currencies):
+            sub = df[df["화폐"].str.upper().str.strip() == cur]
+            b = sub["매입총액(LC)"].sum()
+            e = sub["평가총액(LC)"].sum()
+            p = sub["평가손익(LC)"].sum()
+            y = (e / b - 1) * 100 if b else 0
+            c = "#ef553b" if p < 0 else "#00cc96"
+            parts.append(
+                f"<div style='border:1px solid #444;border-radius:6px;padding:6px 14px;'>"
+                f"<span style='font-size:0.85em;color:gray;'>{cur}</span><br>"
+                f"매입: {fmt_num2(b)} | 평가: {fmt_num2(e)} | "
+                f"<span style='color:{c};'>손익: {fmt_num2(p)} | {fmt_pct(y)}</span>"
+                f"</div>"
+            )
+        st.markdown(
+            f"<div style='display:flex;gap:16px;font-size:1.0em;font-weight:bold;padding:8px 0;flex-wrap:wrap;'>{''.join(parts)}</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        total_buy  = df["매입총액(KRW)"].sum()
+        total_eval = df["평가총액(KRW)"].sum()
+        total_pl   = df["평가손익(KRW)"].sum()
+        total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
+        pl_color = "#ef553b" if total_pl < 0 else "#00cc96"
+        st.markdown(f"""
     <div style='display:flex;gap:40px;font-size:1.05em;font-weight:bold;padding:8px 0;'>
         <div>매입총액: {fmt_num(total_buy)} 원</div>
         <div>평가총액: {fmt_num(total_eval)} 원</div>
