@@ -5,9 +5,35 @@ from config import SHEET_NAMES
 
 
 def render(spreadsheet, get_usdkrw):
-    """부채 테이블
-    Google Sheets '부채' 시트 기준.
-    예상 컬럼: 금융기관, 소유, 대출종류, 통화, 잔액, 금리(%), 만기일
-    """
     st.subheader("📋 부채 테이블")
-    st.info("🚧 구현 예정입니다.")
+
+    sheet = spreadsheet.worksheet(SHEET_NAMES["debt"])
+    rows = sheet.get_all_values()
+    if not rows or len(rows) < 2:
+        st.warning("부채 시트에 데이터가 없습니다.")
+        return
+
+    df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+
+    required_cols = ["소유", "구분", "현재부채"]
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        st.error(f"부채 시트에 누락된 컬럼: {missing}")
+        st.write("실제 컬럼:", df.columns.tolist())
+        return
+
+    df = df[required_cols].copy()
+    df["현재부채"] = pd.to_numeric(df["현재부채"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
+
+    total_debt = df["현재부채"].sum()
+
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-size:1.1em;font-weight:bold;'>
+        <div>총 부채: {fmt_num(total_debt)} 원</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    display_df = df.copy()
+    display_df["현재부채"] = display_df["현재부채"].apply(fmt_num)
+
+    st.dataframe(display_df, use_container_width=True)

@@ -1,11 +1,46 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+from ui.components import exchange_rate_header
+from config import SHEET_NAMES
 
 
 def render(spreadsheet, get_usdkrw):
-    """현금성자산 차트 대시보드
-    assets_table/cash.py 데이터를 기반으로 차트를 렌더링합니다.
-    예: 통화별 비중, 계좌별 분포
-    """
-    st.subheader("📊 현금성자산 차트")
-    st.info("🚧 구현 예정입니다.")
+    usdkrw = get_usdkrw()
+    exchange_rate_header("📊 현금성자산 차트", usdkrw)
+
+    sheet = spreadsheet.worksheet(SHEET_NAMES["cash"])
+    rows = sheet.get_all_values()
+    if not rows or len(rows) < 2:
+        st.warning("현금성자산 시트에 데이터가 없습니다.")
+        return
+
+    df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+    df["금액"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
+    df["통화"] = df["통화"].astype(str).str.strip().str.upper()
+    df["금액(KRW)"] = df.apply(
+        lambda r: r["금액"] if r["통화"] == "KRW" else (r["금액"] * usdkrw if usdkrw else 0), axis=1
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("##### 성격별 현금 비중 (KRW)")
+        group_col = "성격" if "성격" in df.columns else "계좌구분"
+        df_grp = df.groupby(group_col)["금액(KRW)"].sum().reset_index()
+        fig = px.pie(df_grp, values="금액(KRW)", names=group_col, hole=0.3)
+        fig.update_traces(textposition="inside", textinfo="percent+label")
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.markdown("##### 통화별 현금 비중 (KRW)")
+        df_cur = df.groupby("통화")["금액(KRW)"].sum().reset_index()
+        fig2 = px.pie(df_cur, values="금액(KRW)", names="통화", hole=0.3)
+        fig2.update_traces(textposition="inside", textinfo="percent+label")
+        st.plotly_chart(fig2, use_container_width=True)
+
+    st.markdown("##### 증권사/기관별 현금 보유액 (KRW)")
+    if "증권사" in df.columns:
+        df_inst = df.groupby("증권사")["금액(KRW)"].sum().reset_index().sort_values("금액(KRW)", ascending=False)
+        fig3 = px.bar(df_inst, x="증권사", y="금액(KRW)")
+        st.plotly_chart(fig3, use_container_width=True)

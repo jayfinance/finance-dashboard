@@ -5,9 +5,12 @@ SHEET_NAMES = {
     "overseas": "해외자산",
     "crypto": "가상자산",
     "cash": "현금성자산",
-    "property": "부동산자산",
-    "etc": "기타자산",
+    "property": "부동산",
+    "etc": "기타",
     "debt": "부채",
+    "trend": "자산추이",
+    "domestic_div": "국내배당",
+    "overseas_div": "해외배당",
 }
 
 CACHE_TTL = {
