@@ -9,8 +9,9 @@ def get_spreadsheet():
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
+        # Streamlit Cloud의 SecretDict를 일반 dict로 변환 (Google 인증 라이브러리 호환)
         creds = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"], scopes=scope
+            dict(st.secrets["gcp_service_account"]), scopes=scope
         )
         client = gspread.authorize(creds)
 

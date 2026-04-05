@@ -1,0 +1,16 @@
+# Streamlit secrets (로컬 전용 — Streamlit Cloud에는 대시보드에서 직접 등록)
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+
+# 환경
+.env
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
