@@ -4,7 +4,7 @@ import streamlit as st
 # 서비스 계층
 # -------------------------------
 from service.sheets import get_spreadsheet
-from service.market_data import get_usdkrw, get_kr_price, get_us_price
+from service.market_data import get_usdkrw, get_jpykrw, get_kr_price, get_us_price
 from service.crypto_data import get_crypto_prices
 
 # -------------------------------
@@ -169,7 +169,7 @@ if page == "국내 투자자산":
     domestic_table(spreadsheet, get_kr_price, gold_override)
 
 elif page == "해외 투자자산":
-    overseas_table(spreadsheet, get_usdkrw, get_us_price)
+    overseas_table(spreadsheet, get_usdkrw, get_us_price, get_jpykrw)
 
 elif page == "가상자산":
     crypto_table(spreadsheet, get_usdkrw, get_crypto_prices)

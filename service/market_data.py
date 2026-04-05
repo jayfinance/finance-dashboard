@@ -13,6 +13,15 @@ def get_usdkrw():
         return None
 
 
+@st.cache_data(ttl=600)
+def get_jpykrw():
+    try:
+        data = yf.Ticker("JPYKRW=X").history(period="5d")["Close"].dropna()
+        return float(data.iloc[-1]) if not data.empty else None
+    except Exception:
+        return None
+
+
 # -------------------------------
 # 금 시세
 # -------------------------------
