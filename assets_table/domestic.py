@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from ui.formatters import fmt_num, fmt_pct
+from ui.filters import render_table_filters
 from config import SHEET_NAMES
 
 
@@ -32,11 +33,8 @@ def render(spreadsheet, get_kr_price, gold_override):
     # 빈 행 제거 (보유수량·매수단가 없는 행)
     df = df.dropna(subset=["보유수량", "매수단가"]).reset_index(drop=True)
 
-    # ── 소유 필터 ──────────────────────────────────────────
-    owners = sorted(df["소유"].dropna().unique().tolist())
-    sel_owners = st.multiselect("소유 필터", owners, default=owners, key="filter_domestic_owner")
-    if sel_owners:
-        df = df[df["소유"].isin(sel_owners)].reset_index(drop=True)
+    # ── 필터 ──────────────────────────────────────────────
+    df = render_table_filters(df, ["증권사", "소유", "종목명", "계좌구분", "성격"], "domestic")
 
     # ── 매입총액 계산 ──────────────────────────────────────
     df["매입총액 (KRW)"] = df["보유수량"] * df["매수단가"]

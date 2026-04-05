@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from ui.formatters import fmt_num, fmt_num2, fmt_pct
+from ui.filters import render_table_filters
 from config import SHEET_NAMES
 
 
@@ -58,11 +59,8 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
 
     df = df.dropna(subset=["보유수량", "매수단가"]).reset_index(drop=True)
 
-    # ── 소유 필터 ──────────────────────────────────────────
-    owners = sorted(df["소유"].dropna().unique().tolist())
-    sel_owners = st.multiselect("소유 필터", owners, default=owners, key="filter_overseas_owner")
-    if sel_owners:
-        df = df[df["소유"].isin(sel_owners)].reset_index(drop=True)
+    # ── 필터 ──────────────────────────────────────────────
+    df = render_table_filters(df, ["증권사", "소유", "화폐", "종목티커", "계좌구분", "성격"], "overseas")
 
     # ── 화폐별 현재 환율 매핑 ──────────────────────────────
     rate_map = {"USD": usdkrw, "JPY": jpykrw}

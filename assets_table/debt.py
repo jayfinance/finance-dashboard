@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from ui.formatters import fmt_num
+from ui.filters import render_table_filters
 from config import SHEET_NAMES
 
 
@@ -25,11 +26,8 @@ def render(spreadsheet, get_usdkrw):
     df = df[required_cols].copy()
     df["현재부채"] = pd.to_numeric(df["현재부채"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
 
-    # ── 소유 필터 ──────────────────────────────────────────
-    owners = sorted(df["소유"].dropna().unique().tolist())
-    sel_owners = st.multiselect("소유 필터", owners, default=owners, key="filter_debt_owner")
-    if sel_owners:
-        df = df[df["소유"].isin(sel_owners)].reset_index(drop=True)
+    # ── 필터 ──────────────────────────────────────────────
+    df = render_table_filters(df, ["소유", "구분"], "debt")
 
     total_debt = df["현재부채"].sum()
 
