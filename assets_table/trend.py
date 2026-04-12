@@ -151,7 +151,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price,
     st.markdown("#### 행 삭제")
 
     row_labels = df["기준일"].tolist() if "기준일" in df.columns else [str(i + 1) for i in range(len(df))]
-    selected_label = st.selectbox("삭제할 행 선택 (기준일)", row_labels, key="trend_delete_select")
+    selected_label = st.selectbox("삭제할 행 선택 (기준일)", row_labels, index=len(row_labels) - 1, key="trend_delete_select")
 
     # 2단계 확인
     if "trend_delete_step" not in st.session_state:
