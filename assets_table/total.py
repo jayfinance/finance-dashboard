@@ -346,7 +346,6 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
     net_pl        = total_pl - debt_total
     total_yield   = (total_assets / total_buy - 1) * 100 if total_buy else 0
 
-    pl_color  = "#ef553b" if total_pl < 0 else "#00cc96"
     npl_color = "#ef553b" if net_pl < 0 else "#00cc96"
 
     st.markdown(f"""
@@ -355,7 +354,6 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
         <div>총 자산: {fmt_num(total_assets)} 원</div>
         <div>부채: {fmt_num(debt_total)} 원</div>
         <div>순자산: {fmt_num(net_assets)} 원</div>
-        <div style='color:{pl_color};'>평가손익: {fmt_num(total_pl)} 원</div>
         <div style='color:{npl_color};'>순 평가손익: {fmt_num(net_pl)} 원</div>
         <div>전체 수익률: {fmt_pct(total_yield)}</div>
     </div>
