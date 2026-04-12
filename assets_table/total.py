@@ -462,7 +462,7 @@ def _style_sum(df, label_col):
     """Sum 행에 배경 음영을 적용한 Styler 반환."""
     def _apply(row):
         if str(row[label_col]).strip() == "Sum":
-            return ["background-color: rgba(74, 111, 165, 0.4); font-weight: bold"] * len(row)
+            return ["background-color: rgb(204, 255, 255); font-weight: bold"] * len(row)
         return [""] * len(row)
     return df.style.apply(_apply, axis=1)
 
