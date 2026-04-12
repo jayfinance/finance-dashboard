@@ -3,6 +3,9 @@ import pandas as pd
 from ui.formatters import fmt_num, fmt_pct
 from config import SHEET_NAMES
 
+NATURES    = ["금", "배당", "성장", "안정", "채권", "현금", "예금", "펀드", "가상자산"]
+ASSET_COLS = ["국내 투자자산", "해외 투자자산", "가상자산", "현금성 자산", "기타자산"]
+
 
 # ── 카테고리별 KRW 합산 헬퍼 (전체 합계용) ───────────────────────────────────
 
@@ -310,6 +313,136 @@ def _fmt_pivot(df):
     return fmt
 
 
+# ── 성격별 헬퍼 ──────────────────────────────────────────────────────────────
+
+def _nature_domestic(spreadsheet, get_kr_price, gold_override):
+    try:
+        sheet = spreadsheet.worksheet(SHEET_NAMES["domestic"])
+        rows = sheet.get_all_values()
+        df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+        df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
+        df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
+        df["매수단가"] = pd.to_numeric(df["매수단가"].str.replace(",", ""), errors="coerce")
+        df = df.dropna(subset=["보유수량", "매수단가"])
+        df["현재가"] = [get_kr_price(t, n, gold_override) for t, n in zip(df["종목코드"], df["종목명"])]
+        df["금액"] = df["보유수량"] * df["현재가"]
+        return df[["소유", "성격", "금액"]]
+    except Exception:
+        return pd.DataFrame(columns=["소유", "성격", "금액"])
+
+
+def _nature_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
+    try:
+        rate_map = {"USD": get_usdkrw(), "JPY": get_jpykrw()}
+        sheet = spreadsheet.worksheet(SHEET_NAMES["overseas"])
+        rows = sheet.get_all_values()
+        df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+        df["보유수량"] = pd.to_numeric(df["보유수량"].astype(str).str.replace(",", ""), errors="coerce")
+        df["현재환율"] = df["화폐"].str.upper().str.strip().map(rate_map)
+        df = df.dropna(subset=["보유수량"])
+        df["현재가"] = df["종목티커"].apply(get_us_price)
+        df["금액"] = df["보유수량"] * df["현재가"] * df["현재환율"]
+        return df[["소유", "성격", "금액"]]
+    except Exception:
+        return pd.DataFrame(columns=["소유", "성격", "금액"])
+
+
+def _nature_crypto(spreadsheet, get_usdkrw, get_crypto_prices):
+    try:
+        usdkrw = get_usdkrw()
+        sheet = spreadsheet.worksheet(SHEET_NAMES["crypto"])
+        rows = sheet.get_all_values()
+        df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+        df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].astype(str).str.replace(",", ""), errors="coerce")
+        df["coingecko_id"] = df["coingecko_id"].astype(str).str.strip().str.lower()
+        df["통화"] = df["통화"].astype(str).str.strip().str.upper().replace({"원": "KRW", "KR": "KRW", "달러": "USD", "US": "USD"})
+        all_ids = df["coingecko_id"].dropna().unique().tolist()
+        price_map = get_crypto_prices(tuple(all_ids)) or st.session_state.get("last_crypto_prices", {})
+
+        def get_price(row):
+            info = price_map.get(row["coingecko_id"], {})
+            return info.get("krw") if row["통화"] == "KRW" else info.get("usd")
+
+        df["현재가"] = df.apply(get_price, axis=1)
+        df["평가총액"] = df["수량(qty)"] * df["현재가"]
+        df["금액"] = df.apply(
+            lambda r: r["평가총액"] if r["통화"] == "KRW" else (r["평가총액"] * usdkrw if usdkrw else float("nan")),
+            axis=1,
+        )
+        df["성격"] = "가상자산"
+        return df[["소유", "성격", "금액"]]
+    except Exception:
+        return pd.DataFrame(columns=["소유", "성격", "금액"])
+
+
+def _nature_cash(spreadsheet, get_usdkrw):
+    try:
+        usdkrw = get_usdkrw()
+        sheet = spreadsheet.worksheet(SHEET_NAMES["cash"])
+        rows = sheet.get_all_values()
+        df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+        df["금액_raw"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
+        df["통화"] = df["통화"].astype(str).str.strip().str.upper()
+        df["금액"] = df.apply(
+            lambda r: r["금액_raw"] if r["통화"] == "KRW" else (r["금액_raw"] * usdkrw if usdkrw else 0), axis=1
+        )
+        return df[["소유", "성격", "금액"]]
+    except Exception:
+        return pd.DataFrame(columns=["소유", "성격", "금액"])
+
+
+def _nature_etc(spreadsheet):
+    try:
+        sheet = spreadsheet.worksheet(SHEET_NAMES["etc"])
+        rows = sheet.get_all_values()
+        df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
+        df["금액"] = pd.to_numeric(df["현재 시세"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
+        return df[["소유", "성격", "금액"]]
+    except Exception:
+        return pd.DataFrame(columns=["소유", "성격", "금액"])
+
+
+def _build_nature_pivot(dfs_by_type, owner_filter=None):
+    combined = []
+    for asset_type, df in dfs_by_type.items():
+        tmp = df.copy()
+        tmp["자산유형"] = asset_type
+        combined.append(tmp)
+    if not combined:
+        return pd.DataFrame()
+
+    full = pd.concat(combined, ignore_index=True)
+    full["성격"] = full["성격"].astype(str).str.strip()
+
+    if owner_filter:
+        full = full[full["소유"].astype(str).str.strip() == owner_filter]
+
+    full = full[full["성격"].isin(NATURES)]
+
+    pivot = full.pivot_table(
+        index="성격", columns="자산유형", values="금액", aggfunc="sum", fill_value=0
+    )
+    for col in ASSET_COLS:
+        if col not in pivot.columns:
+            pivot[col] = 0
+    pivot = pivot[ASSET_COLS].reindex(NATURES, fill_value=0).reset_index()
+    pivot.columns.name = None
+
+    pivot["Total"] = pivot[ASSET_COLS].sum(axis=1)
+    total = pivot["Total"].sum()
+    pivot["Rate(비율)"] = pivot["Total"] / total * 100 if total else 0
+    return pivot
+
+
+def _fmt_nature_pivot(df):
+    fmt = df.copy()
+    for col in ASSET_COLS + ["Total"]:
+        if col in fmt.columns:
+            fmt[col] = fmt[col].apply(fmt_num)
+    fmt["Rate(비율)"] = fmt["Rate(비율)"].apply(fmt_pct)
+    return fmt
+
+
 # ── 메인 렌더 ─────────────────────────────────────────────────────────────────
 
 def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override, get_jpykrw):
@@ -396,3 +529,29 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
 
     st.markdown("##### 2. 소유 기준 (취득금액(KRW))")
     st.dataframe(_fmt_pivot(df_buy_pivot), use_container_width=True)
+
+    # ── 금융 자산 성격별 비중 ─────────────────────────────
+    st.markdown("---")
+    st.subheader("📊 금융 자산 성격별 비중")
+
+    with st.spinner("성격별 데이터 로딩 중..."):
+        dfs_by_type = {
+            "국내 투자자산": _nature_domestic(spreadsheet, get_kr_price, gold_override),
+            "해외 투자자산": _nature_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw),
+            "가상자산":      _nature_crypto(spreadsheet, get_usdkrw, get_crypto_prices),
+            "현금성 자산":   _nature_cash(spreadsheet, get_usdkrw),
+            "기타자산":      _nature_etc(spreadsheet),
+        }
+
+    st.markdown("##### 전체")
+    st.dataframe(_fmt_nature_pivot(_build_nature_pivot(dfs_by_type)), use_container_width=True)
+
+    all_owners = sorted({
+        str(r["소유"]).strip()
+        for df in dfs_by_type.values()
+        for _, r in df.iterrows()
+        if pd.notna(r.get("소유")) and str(r.get("소유")).strip()
+    })
+    for i, owner in enumerate(all_owners, 1):
+        st.markdown(f"##### {i}. 소유자: {owner}")
+        st.dataframe(_fmt_nature_pivot(_build_nature_pivot(dfs_by_type, owner_filter=owner)), use_container_width=True)
