@@ -79,3 +79,27 @@ def render(spreadsheet, get_kr_price, gold_override):
     display_df["수익률 (%)"] = display_df["수익률 (%)"].apply(fmt_pct)
 
     st.dataframe(display_df, use_container_width=True)
+
+    # ── 종목명별 요약 테이블 ───────────────────────────────
+    st.markdown("---")
+    st.markdown("##### 종목별 요약")
+
+    pivot = (
+        df.groupby("종목명", as_index=False)
+        .agg(보유수량=("보유수량", "sum"), 평가총액=("평가총액 (KRW)", "sum"))
+        .sort_values("평가총액", ascending=False)
+        .reset_index(drop=True)
+    )
+    total_eval = pivot["평가총액"].sum()
+    pivot["비율"] = pivot["평가총액"] / total_eval * 100 if total_eval else 0
+
+    pivot_display = pivot.copy()
+    pivot_display["보유수량"]  = pivot_display["보유수량"].apply(fmt_num)
+    pivot_display["평가총액"]  = pivot_display["평가총액"].apply(fmt_num)
+    pivot_display["비율"]      = pivot_display["비율"].apply(fmt_pct)
+    pivot_display = pivot_display.rename(columns={
+        "평가총액": "평가총액 (KRW)",
+        "비율": "평가총액 비율",
+    })
+
+    st.dataframe(pivot_display, use_container_width=True)
