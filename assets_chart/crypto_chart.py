@@ -76,6 +76,17 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
         fig2.update_layout(yaxis_title=None, xaxis_title="수익률 (%)", margin=dict(t=20))
         st.plotly_chart(fig2, width="stretch")
 
+    if "소유" in df_valid.columns:
+        st.markdown("---")
+        col_o1, _ = st.columns(2)
+        with col_o1:
+            st.markdown("##### 소유자별 평가금액 비중")
+            pivot_owner = df_valid.groupby("소유", as_index=False)["평가총액(KRW)"].sum()
+            fig_o = px.pie(pivot_owner, values="평가총액(KRW)", names="소유", hole=0.35)
+            fig_o.update_traces(textposition="inside", textinfo="percent+label")
+            fig_o.update_layout(showlegend=False, margin=dict(t=20, b=20))
+            st.plotly_chart(fig_o, width="stretch")
+
     st.markdown("##### 코인별 매입총액 vs 평가총액 (KRW)")
     pivot_bar = (
         df_valid.groupby("코인", as_index=False)[["매입총액(KRW)", "평가총액(KRW)"]].sum()

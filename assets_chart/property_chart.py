@@ -41,6 +41,16 @@ def render(spreadsheet, get_usdkrw):
         fig2.update_layout(coloraxis_showscale=False)
         st.plotly_chart(fig2, width="stretch")
 
+    if "소유" in df.columns:
+        col_o1, _ = st.columns(2)
+        with col_o1:
+            st.markdown("##### 소유자별 평가금액 비중")
+            pivot_owner = df.groupby("소유", as_index=False)["현재 시세"].sum()
+            fig_o = px.pie(pivot_owner, values="현재 시세", names="소유", hole=0.35)
+            fig_o.update_traces(textposition="inside", textinfo="percent+label")
+            fig_o.update_layout(showlegend=False, margin=dict(t=20, b=20))
+            st.plotly_chart(fig_o, width="stretch")
+
     st.markdown("##### 항목별 매입가 vs 현재 시세")
     df_bar = df.melt(id_vars=name_col, value_vars=["매입가", "현재 시세"], var_name="항목", value_name="금액(KRW)")
     fig3 = px.bar(df_bar, x=name_col, y="금액(KRW)", color="항목", barmode="group")

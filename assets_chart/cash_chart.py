@@ -39,6 +39,16 @@ def render(spreadsheet, get_usdkrw):
         fig2.update_traces(textposition="inside", textinfo="percent+label")
         st.plotly_chart(fig2, width="stretch")
 
+    if "소유" in df.columns:
+        col_o1, _ = st.columns(2)
+        with col_o1:
+            st.markdown("##### 소유자별 평가금액 비중")
+            pivot_owner = df.groupby("소유", as_index=False)["금액(KRW)"].sum()
+            fig_o = px.pie(pivot_owner, values="금액(KRW)", names="소유", hole=0.35)
+            fig_o.update_traces(textposition="inside", textinfo="percent+label")
+            fig_o.update_layout(showlegend=False, margin=dict(t=20, b=20))
+            st.plotly_chart(fig_o, width="stretch")
+
     st.markdown("##### 증권사/기관별 현금 보유액 (KRW)")
     if "증권사" in df.columns:
         df_inst = df.groupby("증권사")["금액(KRW)"].sum().reset_index().sort_values("금액(KRW)", ascending=False)
