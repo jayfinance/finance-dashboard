@@ -572,21 +572,21 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
 
     # ── 종합 요약 테이블 ───────────────────────────────────
     summary_rows = [
-        {"자산 종류": "국내 투자자산", "취득금액 (KRW)": dom_buy,  "현재금액 (KRW)": dom_eval},
-        {"자산 종류": "해외 투자자산", "취득금액 (KRW)": ovs_buy,  "현재금액 (KRW)": ovs_eval},
-        {"자산 종류": "가상자산",      "취득금액 (KRW)": cry_buy,  "현재금액 (KRW)": cry_eval},
-        {"자산 종류": "현금성자산",    "취득금액 (KRW)": cash_buy, "현재금액 (KRW)": cash_eval},
-        {"자산 종류": "부동산자산",    "취득금액 (KRW)": prop_buy, "현재금액 (KRW)": prop_eval},
-        {"자산 종류": "기타자산",      "취득금액 (KRW)": etc_buy,  "현재금액 (KRW)": etc_eval},
+        {"자산 종류": "국내 투자자산", "매입금액 (KRW)": dom_buy,  "평가금액 (KRW)": dom_eval},
+        {"자산 종류": "해외 투자자산", "매입금액 (KRW)": ovs_buy,  "평가금액 (KRW)": ovs_eval},
+        {"자산 종류": "가상자산",      "매입금액 (KRW)": cry_buy,  "평가금액 (KRW)": cry_eval},
+        {"자산 종류": "현금성자산",    "매입금액 (KRW)": cash_buy, "평가금액 (KRW)": cash_eval},
+        {"자산 종류": "부동산자산",    "매입금액 (KRW)": prop_buy, "평가금액 (KRW)": prop_eval},
+        {"자산 종류": "기타자산",      "매입금액 (KRW)": etc_buy,  "평가금액 (KRW)": etc_eval},
     ]
     df_summary = pd.DataFrame(summary_rows)
-    df_summary["평가손익 (KRW)"] = df_summary["현재금액 (KRW)"] - df_summary["취득금액 (KRW)"]
+    df_summary["평가손익 (KRW)"] = df_summary["평가금액 (KRW)"] - df_summary["매입금액 (KRW)"]
     df_summary["수익률 (%)"] = (
-        df_summary["현재금액 (KRW)"] / df_summary["취득금액 (KRW)"].replace(0, float("nan")) - 1
+        df_summary["평가금액 (KRW)"] / df_summary["매입금액 (KRW)"].replace(0, float("nan")) - 1
     ) * 100
 
-    total_assets  = df_summary["현재금액 (KRW)"].sum()
-    total_buy     = df_summary["취득금액 (KRW)"].sum()
+    total_assets  = df_summary["평가금액 (KRW)"].sum()
+    total_buy     = df_summary["매입금액 (KRW)"].sum()
     net_assets    = total_assets - debt_total
     total_pl      = df_summary["평가손익 (KRW)"].sum()
     net_pl        = total_pl - debt_total
@@ -596,7 +596,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
 
     st.markdown(f"""
     <div style='display:flex;gap:40px;font-size:1.1em;font-weight:bold;'>
-        <div>총 취득금액: {fmt_num(total_buy)} 원</div>
+        <div>총 매입금액: {fmt_num(total_buy)} 원</div>
         <div>총 자산: {fmt_num(total_assets)} 원</div>
         <div>부채: {fmt_num(debt_total)} 원</div>
         <div>순자산: {fmt_num(net_assets)} 원</div>
@@ -607,21 +607,21 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
 
     debt_row = pd.DataFrame([{
         "자산 종류": "부채",
-        "취득금액 (KRW)": debt_total,
-        "현재금액 (KRW)": debt_total,
+        "매입금액 (KRW)": debt_total,
+        "평가금액 (KRW)": debt_total,
         "평가손익 (KRW)": 0,
         "수익률 (%)": float("nan"),
     }])
     sum_row = pd.DataFrame([{
         "자산 종류": "Sum",
-        "취득금액 (KRW)": total_buy,
-        "현재금액 (KRW)": total_assets,
+        "매입금액 (KRW)": total_buy,
+        "평가금액 (KRW)": total_assets,
         "평가손익 (KRW)": net_pl,
         "수익률 (%)": total_yield,
     }])
     display_df = pd.concat([df_summary, debt_row, sum_row], ignore_index=True)
     fmt_df = display_df.copy()
-    for col in ["취득금액 (KRW)", "현재금액 (KRW)", "평가손익 (KRW)"]:
+    for col in ["매입금액 (KRW)", "평가금액 (KRW)", "평가손익 (KRW)"]:
         fmt_df[col] = fmt_df[col].apply(fmt_num)
     fmt_df["수익률 (%)"] = fmt_df["수익률 (%)"].apply(fmt_pct)
     st.dataframe(_style_sum(fmt_df, "자산 종류"), use_container_width=True)
@@ -647,7 +647,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
     st.markdown("##### 1. 소유 기준 (평가금액(KRW))")
     st.dataframe(_style_sum(_fmt_pivot(df_eval_pivot), "소유"), use_container_width=True)
 
-    st.markdown("##### 2. 소유 기준 (취득금액(KRW))")
+    st.markdown("##### 2. 소유 기준 (매입금액(KRW))")
     st.dataframe(_style_sum(_fmt_pivot(df_buy_pivot), "소유"), use_container_width=True)
 
     # ── 금융 자산 성격별 비중 ─────────────────────────────
