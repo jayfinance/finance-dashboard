@@ -148,3 +148,47 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
         ]
 
     st.dataframe(display_df[cols], use_container_width=True)
+
+    # ── 종목티커별 요약 테이블 ─────────────────────────────
+    st.markdown("---")
+    st.markdown("##### 종목별 요약")
+
+    pivot = (
+        df.groupby("종목티커", as_index=False)
+        .agg(보유수량=("보유수량", "sum"), **{"평가총액(KRW)": ("평가총액(KRW)", "sum")})
+        .sort_values("평가총액(KRW)", ascending=False)
+        .reset_index(drop=True)
+    )
+    total_eval_p = pivot["평가총액(KRW)"].sum()
+    pivot["평가총액 비율"] = pivot["평가총액(KRW)"] / total_eval_p * 100 if total_eval_p else 0
+
+    sum_row = pd.DataFrame([{
+        "종목티커": "Sum",
+        "보유수량": pivot["보유수량"].sum(),
+        "평가총액(KRW)": pivot["평가총액(KRW)"].sum(),
+        "평가총액 비율": 100.0,
+    }])
+    pivot_num = pd.concat([pivot, sum_row], ignore_index=True)
+
+    non_sum_idx = pivot_num.index[pivot_num["종목티커"] != "Sum"]
+
+    def _highlight_sum(row):
+        if row["종목티커"] == "Sum":
+            return ["background-color: rgba(204, 255, 255, 0.25); font-weight: bold"] * len(row)
+        return [""] * len(row)
+
+    styler = (
+        pivot_num.style
+        .background_gradient(
+            subset=pd.IndexSlice[non_sum_idx, ["평가총액 비율"]],
+            cmap="Blues",
+        )
+        .apply(_highlight_sum, axis=1)
+        .format({
+            "보유수량":       fmt_num2,
+            "평가총액(KRW)": fmt_num,
+            "평가총액 비율": fmt_pct,
+        })
+    )
+
+    st.dataframe(styler, use_container_width=True)
