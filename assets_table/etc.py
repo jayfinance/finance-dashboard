@@ -16,7 +16,7 @@ def render(spreadsheet, get_usdkrw):
 
     df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
 
-    required_cols = ["증권사", "소유", "종목명", "성격", "매입가", "현재 시세"]
+    required_cols = ["증권사", "소유", "종목명", "계좌구분", "성격", "매입가", "현재 시세"]
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
         st.error(f"기타 시트에 누락된 컬럼: {missing}")
@@ -28,7 +28,7 @@ def render(spreadsheet, get_usdkrw):
     df["현재 시세"] = pd.to_numeric(df["현재 시세"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
 
     # ── 필터 ──────────────────────────────────────────────
-    df = render_table_filters(df, ["증권사", "소유", "종목명", "성격"], "etc")
+    df = render_table_filters(df, ["증권사", "소유", "종목명", "계좌구분", "성격"], "etc")
 
     df["평가손익(KRW)"] = df["현재 시세"] - df["매입가"]
     df["수익률(%)"] = (df["평가손익(KRW)"] / df["매입가"].replace(0, float("nan"))) * 100
