@@ -101,7 +101,7 @@ if section == "Table":
                 "기타자산",
                 "부채",
                 "종합",
-                "추이",
+                "자산 추이",
             ],
             key="table_assets",
             on_change=_on_table_assets,
@@ -132,7 +132,7 @@ elif section == "Chart":
                 "기타자산 차트",
                 "부채 차트",
                 "종합 차트",
-                "추이 차트",
+                "자산 추이 차트",
             ],
             key="chart_assets",
             on_change=_on_chart_assets,
@@ -189,8 +189,8 @@ elif page == "부채":
 elif page == "종합":
     total_table(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override, get_jpykrw)
 
-elif page == "추이":
-    trend_table(spreadsheet)
+elif page == "자산 추이":
+    trend_table(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override, get_jpykrw)
 
 # =========================================================
 # 라우팅 — 배당 테이블
@@ -228,7 +228,7 @@ elif page == "부채 차트":
 elif page == "종합 차트":
     total_chart(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override)
 
-elif page == "추이 차트":
+elif page == "자산 추이 차트":
     trend_chart(spreadsheet)
 
 # =========================================================
