@@ -163,8 +163,8 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
     pivot["평가총액 비율"] = pivot["평가총액(KRW)"] / total_eval_p * 100 if total_eval_p else 0
 
     sum_row = pd.DataFrame([{
-        "종목티커": "Sum",
-        "보유수량": pivot["보유수량"].sum(),
+        "종목티커":      "Sum",
+        "보유수량":      pivot["보유수량"].sum(),
         "평가총액(KRW)": pivot["평가총액(KRW)"].sum(),
         "평가총액 비율": 100.0,
     }])

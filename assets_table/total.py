@@ -644,7 +644,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
 
     df_eval_pivot, df_buy_pivot = _build_owner_pivot(eval_dicts, buy_dicts, debt_by, asset_labels)
 
-    st.markdown("##### 1. 소유 기준 (현재금액(KRW))")
+    st.markdown("##### 1. 소유 기준 (평가금액(KRW))")
     st.dataframe(_style_sum(_fmt_pivot(df_eval_pivot), "소유"), use_container_width=True)
 
     st.markdown("##### 2. 소유 기준 (취득금액(KRW))")
