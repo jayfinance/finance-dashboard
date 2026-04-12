@@ -147,7 +147,7 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
             "매입환율", "현재환율", "매입총액(KRW)", "평가총액(KRW)", "평가손익(KRW)", "수익률(KRW)",
         ]
 
-    st.dataframe(display_df[cols], use_container_width=True)
+    st.dataframe(display_df[cols], width="stretch")
 
     # ── 종목티커별 요약 테이블 ─────────────────────────────
     st.markdown("---")
@@ -191,4 +191,4 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
         })
     )
 
-    st.dataframe(styler, use_container_width=True)
+    st.dataframe(styler, width="stretch")

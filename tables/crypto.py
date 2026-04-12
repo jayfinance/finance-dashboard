@@ -126,4 +126,4 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
 
     display_df["수익률"] = display_df["수익률"].apply(fmt_pct)
 
-    st.dataframe(display_df, use_container_width=True)
+    st.dataframe(display_df, width="stretch")

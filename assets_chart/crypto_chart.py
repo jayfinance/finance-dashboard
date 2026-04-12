@@ -49,7 +49,7 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
         st.markdown("##### 코인별 평가금액 비중 (KRW)")
         fig = px.pie(df_valid, values="평가총액(KRW)", names="코인", hole=0.3)
         fig.update_traces(textposition="inside", textinfo="percent+label")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.markdown("##### 코인별 수익률")
@@ -57,9 +57,9 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
         fig2 = px.bar(df_sorted, x="수익률(%)", y="코인", orientation="h",
                       color="수익률(%)", color_continuous_scale=["#ef553b", "#636efa", "#00cc96"])
         fig2.update_layout(coloraxis_showscale=False, yaxis_title=None)
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     st.markdown("##### 코인별 매입총액 vs 평가총액 (KRW)")
     df_bar = df_valid.melt(id_vars="코인", value_vars=["매입총액(KRW)", "평가총액(KRW)"], var_name="구분", value_name="금액(KRW)")
     fig3 = px.bar(df_bar, x="코인", y="금액(KRW)", color="구분", barmode="group")
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, width="stretch")

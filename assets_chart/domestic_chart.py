@@ -51,7 +51,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         fig = px.pie(pivot_item, values="평가총액", names="종목명", hole=0.35)
         fig.update_traces(textposition="inside", textinfo="percent+label")
         fig.update_layout(showlegend=False, margin=dict(t=20, b=20))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.markdown("##### 소유자별 평가금액 비중")
@@ -59,7 +59,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         fig2 = px.pie(pivot_owner, values="평가총액", names="소유", hole=0.35)
         fig2.update_traces(textposition="inside", textinfo="percent+label")
         fig2.update_layout(showlegend=False, margin=dict(t=20, b=20))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     # ── 2행: 성격별 비중 | 계좌구분별 비중 ──────────────
     col3, col4 = st.columns(2)
@@ -70,7 +70,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         fig3 = px.pie(pivot_nature, values="평가총액", names="성격", hole=0.35)
         fig3.update_traces(textposition="inside", textinfo="percent+label")
         fig3.update_layout(showlegend=False, margin=dict(t=20, b=20))
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
     with col4:
         st.markdown("##### 계좌구분별 평가금액 비중")
@@ -78,7 +78,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         fig4 = px.pie(pivot_acct, values="평가총액", names="계좌구분", hole=0.35)
         fig4.update_traces(textposition="inside", textinfo="percent+label")
         fig4.update_layout(showlegend=False, margin=dict(t=20, b=20))
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
     # ── 3행: 종목별 수익률 ────────────────────────────────
     st.markdown("---")
@@ -103,7 +103,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         textposition="outside",
     ))
     fig5.update_layout(yaxis_title=None, xaxis_title="수익률 (%)", margin=dict(t=20))
-    st.plotly_chart(fig5, use_container_width=True)
+    st.plotly_chart(fig5, width="stretch")
 
     # ── 4행: 매입총액 vs 평가총액 ────────────────────────
     st.markdown("---")
@@ -117,5 +117,5 @@ def render(spreadsheet, get_kr_price, gold_override):
     fig6 = px.bar(df_melt, x="종목명", y="금액(KRW)", color="구분", barmode="group",
                   color_discrete_map={"매입총액": "#636efa", "평가총액": "#00cc96"})
     fig6.update_layout(xaxis_title=None, margin=dict(t=20))
-    st.plotly_chart(fig6, use_container_width=True)
+    st.plotly_chart(fig6, width="stretch")
 

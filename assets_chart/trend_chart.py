@@ -29,7 +29,7 @@ def render(spreadsheet):
         st.markdown("##### 순자산 추이")
         fig = px.line(df, x="기준일", y="순자산", markers=True)
         fig.update_layout(xaxis_title=None)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     asset_cols = [c for c in ["국내자산", "해외자산", "가상자산", "현금성자산", "부동산", "기타"] if c in df.columns]
     if asset_cols:
@@ -37,7 +37,7 @@ def render(spreadsheet):
         df_melt = df.melt(id_vars="기준일", value_vars=asset_cols, var_name="자산 종류", value_name="금액(KRW)")
         fig2 = px.area(df_melt, x="기준일", y="금액(KRW)", color="자산 종류")
         fig2.update_layout(xaxis_title=None)
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     if "부채" in df.columns and "순자산" in df.columns:
         st.markdown("##### 총자산 / 부채 / 순자산 추이")
@@ -45,4 +45,4 @@ def render(spreadsheet):
         df_melt2 = df.melt(id_vars="기준일", value_vars=total_cols, var_name="구분", value_name="금액(KRW)")
         fig3 = px.line(df_melt2, x="기준일", y="금액(KRW)", color="구분", markers=True)
         fig3.update_layout(xaxis_title=None)
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")

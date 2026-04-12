@@ -31,7 +31,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
         st.markdown("##### 자산 종류별 비중")
         fig = px.pie(df_assets[df_assets["금액 (KRW)"] > 0], values="금액 (KRW)", names="자산 종류", hole=0.3)
         fig.update_traces(textposition="inside", textinfo="percent+label")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.markdown("##### 총자산 / 부채 / 순자산")
@@ -43,9 +43,9 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
         fig2 = px.bar(df_summary, x="구분", y="금액 (KRW)", color="구분",
                       color_discrete_sequence=colors)
         fig2.update_layout(showlegend=False)
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     st.markdown("##### 자산 종류별 금액 (KRW)")
     df_bar = df_assets.sort_values("금액 (KRW)", ascending=True)
     fig3 = px.bar(df_bar, x="금액 (KRW)", y="자산 종류", orientation="h")
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, width="stretch")

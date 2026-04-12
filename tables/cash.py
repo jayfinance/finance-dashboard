@@ -84,4 +84,4 @@ def render(spreadsheet, get_usdkrw):
     display_df["금액"] = display_df["금액"].apply(fmt_num_local)
     display_df["금액(KRW)"] = display_df["금액(KRW)"].apply(fmt_num_local)
 
-    st.dataframe(display_df, use_container_width=True)
+    st.dataframe(display_df, width="stretch")

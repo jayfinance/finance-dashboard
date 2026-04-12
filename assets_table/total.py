@@ -624,7 +624,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
     for col in ["매입금액 (KRW)", "평가금액 (KRW)", "평가손익 (KRW)"]:
         fmt_df[col] = fmt_df[col].apply(fmt_num)
     fmt_df["수익률 (%)"] = fmt_df["수익률 (%)"].apply(fmt_pct)
-    st.dataframe(_style_sum(fmt_df, "자산 종류"), use_container_width=True)
+    st.dataframe(_style_sum(fmt_df, "자산 종류"), width="stretch")
 
     # ── 소유별 피벗 테이블 ────────────────────────────────
     st.markdown("---")
@@ -645,10 +645,10 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
     df_eval_pivot, df_buy_pivot = _build_owner_pivot(eval_dicts, buy_dicts, debt_by, asset_labels)
 
     st.markdown("##### 1. 소유 기준 (평가금액(KRW))")
-    st.dataframe(_style_sum(_fmt_pivot(df_eval_pivot), "소유"), use_container_width=True)
+    st.dataframe(_style_sum(_fmt_pivot(df_eval_pivot), "소유"), width="stretch")
 
     st.markdown("##### 2. 소유 기준 (매입금액(KRW))")
-    st.dataframe(_style_sum(_fmt_pivot(df_buy_pivot), "소유"), use_container_width=True)
+    st.dataframe(_style_sum(_fmt_pivot(df_buy_pivot), "소유"), width="stretch")
 
     # ── 금융 자산 성격별 비중 ─────────────────────────────
     st.markdown("---")
@@ -664,7 +664,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
         }
 
     st.markdown("##### 전체")
-    st.dataframe(_style_sum(_fmt_nature_pivot(_build_nature_pivot(dfs_by_type)), "성격"), use_container_width=True)
+    st.dataframe(_style_sum(_fmt_nature_pivot(_build_nature_pivot(dfs_by_type)), "성격"), width="stretch")
 
     all_owners = sorted({
         str(r["소유"]).strip()
@@ -674,7 +674,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
     })
     for i, owner in enumerate(all_owners, 1):
         st.markdown(f"##### {i}. 소유자: {owner}")
-        st.dataframe(_style_sum(_fmt_nature_pivot(_build_nature_pivot(dfs_by_type, owner_filter=owner)), "성격"), use_container_width=True)
+        st.dataframe(_style_sum(_fmt_nature_pivot(_build_nature_pivot(dfs_by_type, owner_filter=owner)), "성격"), width="stretch")
 
     # ── 금융 자산 계좌별 비중 ─────────────────────────────
     st.markdown("---")
@@ -690,7 +690,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
         }
 
     st.markdown("##### 전체")
-    st.dataframe(_style_sum(_fmt_category_pivot(_build_category_pivot(dfs_by_account, ACCOUNTS, "계좌구분")), "계좌구분"), use_container_width=True)
+    st.dataframe(_style_sum(_fmt_category_pivot(_build_category_pivot(dfs_by_account, ACCOUNTS, "계좌구분")), "계좌구분"), width="stretch")
 
     acct_owners = sorted({
         str(r["소유"]).strip()
@@ -700,4 +700,4 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
     })
     for i, owner in enumerate(acct_owners, 1):
         st.markdown(f"##### {i}. 소유자: {owner}")
-        st.dataframe(_style_sum(_fmt_category_pivot(_build_category_pivot(dfs_by_account, ACCOUNTS, "계좌구분", owner_filter=owner)), "계좌구분"), use_container_width=True)
+        st.dataframe(_style_sum(_fmt_category_pivot(_build_category_pivot(dfs_by_account, ACCOUNTS, "계좌구분", owner_filter=owner)), "계좌구분"), width="stretch")

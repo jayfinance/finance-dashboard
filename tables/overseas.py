@@ -68,4 +68,4 @@ def render(spreadsheet, get_usdkrw, get_us_price):
     else:
         cols = base_cols + ["매입총액(LC)","평가총액(LC)","매입총액(KRW)","평가총액(KRW)","수익률(KRW)"]
 
-    st.dataframe(display_df[cols], use_container_width=True)
+    st.dataframe(display_df[cols], width="stretch")

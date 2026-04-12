@@ -31,16 +31,16 @@ def render(spreadsheet, get_usdkrw):
         df_grp = df.groupby(group_col)["현재부채"].sum().reset_index()
         fig = px.pie(df_grp, values="현재부채", names=group_col, hole=0.3)
         fig.update_traces(textposition="inside", textinfo="percent+label")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.markdown("##### 소유자별 부채")
         if "소유" in df.columns:
             df_own = df.groupby("소유")["현재부채"].sum().reset_index()
             fig2 = px.bar(df_own, x="소유", y="현재부채")
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width="stretch")
 
     st.markdown("##### 구분별 부채 금액")
     df_sorted = df.sort_values("현재부채", ascending=False)
     fig3 = px.bar(df_sorted, x=group_col, y="현재부채")
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, width="stretch")

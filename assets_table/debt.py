@@ -40,4 +40,4 @@ def render(spreadsheet, get_usdkrw):
     display_df = df.copy()
     display_df["현재부채"] = display_df["현재부채"].apply(fmt_num)
 
-    st.dataframe(display_df, use_container_width=True)
+    st.dataframe(display_df, width="stretch")

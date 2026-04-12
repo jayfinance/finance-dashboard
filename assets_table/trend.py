@@ -107,7 +107,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price,
         return f"{v:,.0f}"
 
     snap_rows = [{"항목": k, "값": _fmt_snap_val(k, v)} for k, v in snapshot.items()]
-    st.dataframe(pd.DataFrame(snap_rows), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(snap_rows), width="stretch", hide_index=True)
 
     # ── 입력 버튼 ──────────────────────────────────────────
     st.markdown("---")
@@ -148,7 +148,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price,
                 lambda v: fmt_num(v) if pd.notna(v) else "-"
             )
 
-    st.dataframe(display_df, use_container_width=True, hide_index=True)
+    st.dataframe(display_df, width="stretch", hide_index=True)
 
     # ── 행 삭제 ───────────────────────────────────────────
     st.markdown("---")

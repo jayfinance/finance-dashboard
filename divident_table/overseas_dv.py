@@ -57,4 +57,4 @@ def render(spreadsheet, get_usdkrw):
     display_df["배당금(KRW)"] = display_df["배당금(KRW)"].apply(fmt_num)
     display_df["배당수익률(%)"] = display_df["배당수익률(%)"].apply(fmt_pct)
 
-    st.dataframe(display_df, use_container_width=True)
+    st.dataframe(display_df, width="stretch")

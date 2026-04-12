@@ -51,4 +51,4 @@ def render(spreadsheet, get_usdkrw):
         display_df[col] = display_df[col].apply(fmt_num)
     display_df["수익률(%)"] = display_df["수익률(%)"].apply(fmt_pct)
 
-    st.dataframe(display_df, use_container_width=True)
+    st.dataframe(display_df, width="stretch")

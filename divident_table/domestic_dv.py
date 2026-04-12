@@ -52,4 +52,4 @@ def render(spreadsheet):
     display_df["배당금(원)"] = display_df["배당금(원)"].apply(fmt_num)
     display_df["배당수익률(%)"] = display_df["배당수익률(%)"].apply(fmt_pct)
 
-    st.dataframe(display_df, use_container_width=True)
+    st.dataframe(display_df, width="stretch")

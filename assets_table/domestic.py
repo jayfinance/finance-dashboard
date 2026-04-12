@@ -78,7 +78,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         display_df[col] = display_df[col].apply(fmt_num)
     display_df["수익률 (%)"] = display_df["수익률 (%)"].apply(fmt_pct)
 
-    st.dataframe(display_df, use_container_width=True)
+    st.dataframe(display_df, width="stretch")
 
     # ── 종목명별 요약 테이블 ───────────────────────────────
     st.markdown("---")
@@ -122,4 +122,4 @@ def render(spreadsheet, get_kr_price, gold_override):
         })
     )
 
-    st.dataframe(styler, use_container_width=True)
+    st.dataframe(styler, width="stretch")

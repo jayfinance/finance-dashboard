@@ -32,16 +32,16 @@ def render(spreadsheet, get_usdkrw):
         st.markdown("##### 종목별 현재 시세 비중")
         fig = px.pie(df, values="현재 시세", names=name_col, hole=0.3)
         fig.update_traces(textposition="inside", textinfo="percent+label")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.markdown("##### 종목별 평가손익")
         fig2 = px.bar(df, x=name_col, y="평가손익(KRW)",
                       color="평가손익(KRW)", color_continuous_scale=["#ef553b", "#636efa", "#00cc96"])
         fig2.update_layout(coloraxis_showscale=False)
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     st.markdown("##### 종목별 매입가 vs 현재 시세")
     df_bar = df.melt(id_vars=name_col, value_vars=["매입가", "현재 시세"], var_name="구분", value_name="금액(KRW)")
     fig3 = px.bar(df_bar, x=name_col, y="금액(KRW)", color="구분", barmode="group")
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, width="stretch")

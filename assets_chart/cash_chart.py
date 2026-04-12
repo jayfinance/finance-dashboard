@@ -30,17 +30,17 @@ def render(spreadsheet, get_usdkrw):
         df_grp = df.groupby(group_col)["금액(KRW)"].sum().reset_index()
         fig = px.pie(df_grp, values="금액(KRW)", names=group_col, hole=0.3)
         fig.update_traces(textposition="inside", textinfo="percent+label")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.markdown("##### 통화별 현금 비중 (KRW)")
         df_cur = df.groupby("통화")["금액(KRW)"].sum().reset_index()
         fig2 = px.pie(df_cur, values="금액(KRW)", names="통화", hole=0.3)
         fig2.update_traces(textposition="inside", textinfo="percent+label")
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     st.markdown("##### 증권사/기관별 현금 보유액 (KRW)")
     if "증권사" in df.columns:
         df_inst = df.groupby("증권사")["금액(KRW)"].sum().reset_index().sort_values("금액(KRW)", ascending=False)
         fig3 = px.bar(df_inst, x="증권사", y="금액(KRW)")
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
