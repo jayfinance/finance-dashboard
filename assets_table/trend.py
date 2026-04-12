@@ -80,11 +80,15 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price,
     # ── 시트 로드 ──────────────────────────────────────────
     try:
         sheet = spreadsheet.worksheet(SHEET_NAMES["trend"])
+        rows = sheet.get_all_values()
     except gspread.exceptions.WorksheetNotFound:
         st.info("'자산추이' 시트가 아직 없습니다. Google Sheets에 해당 시트를 추가하면 이 화면에 표시됩니다.")
         return
-
-    rows = sheet.get_all_values()
+    except gspread.exceptions.APIError as e:
+        st.error("Google Sheets API 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
+        if st.button("🔄 새로고침", key="trend_api_retry"):
+            st.rerun()
+        return
 
     # ── 현재 스냅샷 계산 ───────────────────────────────────
     with st.spinner("현재 자산 스냅샷 계산 중..."):
