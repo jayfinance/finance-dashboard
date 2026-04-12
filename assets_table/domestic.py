@@ -86,20 +86,40 @@ def render(spreadsheet, get_kr_price, gold_override):
 
     pivot = (
         df.groupby("종목명", as_index=False)
-        .agg(보유수량=("보유수량", "sum"), 평가총액=("평가총액 (KRW)", "sum"))
-        .sort_values("평가총액", ascending=False)
+        .agg(보유수량=("보유수량", "sum"), **{"평가총액 (KRW)": ("평가총액 (KRW)", "sum")})
+        .sort_values("평가총액 (KRW)", ascending=False)
         .reset_index(drop=True)
     )
-    total_eval = pivot["평가총액"].sum()
-    pivot["비율"] = pivot["평가총액"] / total_eval * 100 if total_eval else 0
+    total_eval_p = pivot["평가총액 (KRW)"].sum()
+    pivot["평가총액 비율"] = pivot["평가총액 (KRW)"] / total_eval_p * 100 if total_eval_p else 0
 
-    pivot_display = pivot.copy()
-    pivot_display["보유수량"]  = pivot_display["보유수량"].apply(fmt_num)
-    pivot_display["평가총액"]  = pivot_display["평가총액"].apply(fmt_num)
-    pivot_display["비율"]      = pivot_display["비율"].apply(fmt_pct)
-    pivot_display = pivot_display.rename(columns={
-        "평가총액": "평가총액 (KRW)",
-        "비율": "평가총액 비율",
-    })
+    sum_row = pd.DataFrame([{
+        "종목명": "Sum",
+        "보유수량": pivot["보유수량"].sum(),
+        "평가총액 (KRW)": pivot["평가총액 (KRW)"].sum(),
+        "평가총액 비율": 100.0,
+    }])
+    pivot_num = pd.concat([pivot, sum_row], ignore_index=True)
 
-    st.dataframe(pivot_display, use_container_width=True)
+    non_sum_idx = pivot_num.index[pivot_num["종목명"] != "Sum"]
+
+    def _highlight_sum(row):
+        if row["종목명"] == "Sum":
+            return ["background-color: rgba(204, 255, 255, 0.25); font-weight: bold"] * len(row)
+        return [""] * len(row)
+
+    styler = (
+        pivot_num.style
+        .background_gradient(
+            subset=pd.IndexSlice[non_sum_idx, ["평가총액 비율"]],
+            cmap="Blues",
+        )
+        .apply(_highlight_sum, axis=1)
+        .format({
+            "보유수량":      fmt_num,
+            "평가총액 (KRW)": fmt_num,
+            "평가총액 비율": fmt_pct,
+        })
+    )
+
+    st.dataframe(styler, use_container_width=True)
