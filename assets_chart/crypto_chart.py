@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from ui.components import exchange_rate_header
 from config import SHEET_NAMES
 
@@ -53,13 +54,36 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
 
     with col2:
         st.markdown("##### 코인별 수익률")
-        df_sorted = df_valid.sort_values("수익률(%)", ascending=True)
-        fig2 = px.bar(df_sorted, x="수익률(%)", y="코인", orientation="h",
-                      color="수익률(%)", color_continuous_scale=["#ef553b", "#636efa", "#00cc96"])
-        fig2.update_layout(coloraxis_showscale=False, yaxis_title=None)
+        pivot_yield = (
+            df_valid.groupby("코인", as_index=False)
+            .apply(lambda g: pd.Series({
+                "매입총액(KRW)": g["매입총액(KRW)"].sum(),
+                "평가총액(KRW)": g["평가총액(KRW)"].sum(),
+            }))
+            .assign(**{"수익률(%)": lambda d: (d["평가총액(KRW)"] / d["매입총액(KRW)"] - 1) * 100})
+            .sort_values("수익률(%)", ascending=True)
+            .reset_index(drop=True)
+        )
+        colors = ["#ef553b" if v < 0 else "#00cc96" for v in pivot_yield["수익률(%)"]]
+        fig2 = go.Figure(go.Bar(
+            x=pivot_yield["수익률(%)"],
+            y=pivot_yield["코인"],
+            orientation="h",
+            marker_color=colors,
+            text=[f"{v:.1f}%" for v in pivot_yield["수익률(%)"]],
+            textposition="outside",
+        ))
+        fig2.update_layout(yaxis_title=None, xaxis_title="수익률 (%)", margin=dict(t=20))
         st.plotly_chart(fig2, width="stretch")
 
     st.markdown("##### 코인별 매입총액 vs 평가총액 (KRW)")
-    df_bar = df_valid.melt(id_vars="코인", value_vars=["매입총액(KRW)", "평가총액(KRW)"], var_name="구분", value_name="금액(KRW)")
-    fig3 = px.bar(df_bar, x="코인", y="금액(KRW)", color="구분", barmode="group")
+    pivot_bar = (
+        df_valid.groupby("코인", as_index=False)[["매입총액(KRW)", "평가총액(KRW)"]].sum()
+        .sort_values("평가총액(KRW)", ascending=False)
+    )
+    df_bar = pivot_bar.melt(id_vars="코인", value_vars=["매입총액(KRW)", "평가총액(KRW)"],
+                            var_name="구분", value_name="금액(KRW)")
+    fig3 = px.bar(df_bar, x="코인", y="금액(KRW)", color="구분", barmode="group",
+                  color_discrete_map={"매입총액(KRW)": "#636efa", "평가총액(KRW)": "#00cc96"})
+    fig3.update_layout(xaxis_title=None, margin=dict(t=20))
     st.plotly_chart(fig3, width="stretch")

@@ -42,6 +42,6 @@ def render(spreadsheet, get_usdkrw):
         st.plotly_chart(fig2, width="stretch")
 
     st.markdown("##### 항목별 매입가 vs 현재 시세")
-    df_bar = df.melt(id_vars=name_col, value_vars=["매입가", "현재 시세"], var_name="구분", value_name="금액(KRW)")
-    fig3 = px.bar(df_bar, x=name_col, y="금액(KRW)", color="구분", barmode="group")
+    df_bar = df.melt(id_vars=name_col, value_vars=["매입가", "현재 시세"], var_name="항목", value_name="금액(KRW)")
+    fig3 = px.bar(df_bar, x=name_col, y="금액(KRW)", color="항목", barmode="group")
     st.plotly_chart(fig3, width="stretch")
