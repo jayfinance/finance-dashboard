@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from ui.formatters import fmt_num, fmt_pct
 from config import SHEET_NAMES
 
 
@@ -37,6 +38,21 @@ def render(spreadsheet, get_kr_price, gold_override):
     df["수익률(%)"] = (df["평가총액"] / df["매입총액"] - 1) * 100
 
     df_valid = df.dropna(subset=["평가총액", "현재가"]).copy()
+
+    # ── 요약 바 ───────────────────────────────────────────
+    total_buy   = df_valid["매입총액"].sum()
+    total_eval  = df_valid["평가총액"].sum()
+    total_pl    = total_eval - total_buy
+    total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
+    pl_color = "#ef553b" if total_pl < 0 else "#00cc96"
+    st.markdown(f"""
+<div style='display:flex;gap:40px;font-size:1.05em;font-weight:bold;padding:8px 0;'>
+    <div>매입총액: {fmt_num(total_buy)} 원</div>
+    <div>평가총액: {fmt_num(total_eval)} 원</div>
+    <div style='color:{pl_color};'>평가손익: {fmt_num(total_pl)} 원</div>
+    <div style='color:{pl_color};'>전체 수익률: {fmt_pct(total_yield)}</div>
+</div>
+""", unsafe_allow_html=True)
 
     # ── 1행: 종목별 비중 | 소유자별 비중 ────────────────
     st.markdown("---")
