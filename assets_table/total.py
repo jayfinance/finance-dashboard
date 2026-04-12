@@ -431,6 +431,11 @@ def _build_nature_pivot(dfs_by_type, owner_filter=None):
     pivot["Total"] = pivot[ASSET_COLS].sum(axis=1)
     total = pivot["Total"].sum()
     pivot["Rate(비율)"] = pivot["Total"] / total * 100 if total else 0
+
+    sum_row = {col: pivot[col].sum() for col in ASSET_COLS + ["Total"]}
+    sum_row["성격"] = "Sum"
+    sum_row["Rate(비율)"] = 100.0
+    pivot = pd.concat([pivot, pd.DataFrame([sum_row])], ignore_index=True)
     return pivot
 
 
