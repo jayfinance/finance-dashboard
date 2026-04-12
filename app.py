@@ -208,7 +208,7 @@ elif page == "국내 투자자산 차트":
     domestic_chart(spreadsheet, get_kr_price, gold_override)
 
 elif page == "해외 투자자산 차트":
-    overseas_chart(spreadsheet, get_usdkrw, get_us_price)
+    overseas_chart(spreadsheet, get_usdkrw, get_us_price, get_jpykrw)
 
 elif page == "가상자산 차트":
     crypto_chart(spreadsheet, get_usdkrw, get_crypto_prices)
