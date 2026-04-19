@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from ui.components import exchange_rate_header
+from ui.formatters import fmt_num
 from config import SHEET_NAMES
 from service.sheets import load_sheet_data
 
@@ -22,6 +23,14 @@ def render(spreadsheet, get_usdkrw):
         return
 
     df["현재부채"] = pd.to_numeric(df["현재부채"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
+
+    total_debt = df["현재부채"].sum()
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-size:1.05em;font-weight:bold;padding:8px 0;'>
+        <div>총 부채: {fmt_num(total_debt)} 원</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     group_col = "구분" if "구분" in df.columns else df.columns[0]
 
     col1, col2 = st.columns(2)
