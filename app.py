@@ -248,7 +248,7 @@ elif page == "부채 차트":
     debt_chart(spreadsheet, get_usdkrw)
 
 elif page == "종합 차트":
-    total_chart(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override)
+    total_chart(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override, get_jpykrw)
 
 elif page == "자산 추이 차트":
     trend_chart(spreadsheet)
