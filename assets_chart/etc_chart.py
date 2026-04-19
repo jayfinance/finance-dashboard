@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from ui.navigation import to_table_button
-from ui.formatters import fmt_num, fmt_pct, korean_yaxis
+from ui.formatters import fmt_num, fmt_pct, korean_yaxis, apply_krw_hover
 from config import SHEET_NAMES
 from service.sheets import load_sheet_data
 
@@ -53,6 +53,7 @@ def render(spreadsheet, get_usdkrw):
         st.markdown("##### 종목별 현재 시세 비중")
         fig = px.pie(df, values="현재 시세", names=name_col, hole=0.3)
         fig.update_traces(textposition="inside", textinfo="percent+label")
+        apply_krw_hover(fig)
         st.plotly_chart(fig, width="stretch")
 
     with col2:
@@ -63,6 +64,7 @@ def render(spreadsheet, get_usdkrw):
             coloraxis_showscale=False,
             yaxis=korean_yaxis(df["평가손익(KRW)"].max(), df["평가손익(KRW)"].min()),
         )
+        apply_krw_hover(fig2)
         st.plotly_chart(fig2, width="stretch")
 
     if "소유" in df.columns:
@@ -73,10 +75,12 @@ def render(spreadsheet, get_usdkrw):
             fig_o = px.pie(pivot_owner, values="현재 시세", names="소유", hole=0.35)
             fig_o.update_traces(textposition="inside", textinfo="percent+label")
             fig_o.update_layout(showlegend=False, margin=dict(t=20, b=20))
+            apply_krw_hover(fig_o)
             st.plotly_chart(fig_o, width="stretch")
 
     st.markdown("##### 종목별 매입가 vs 현재 시세")
     df_bar = df.melt(id_vars=name_col, value_vars=["매입가", "현재 시세"], var_name="구분", value_name="금액(KRW)")
     fig3 = px.bar(df_bar, x=name_col, y="금액(KRW)", color="구분", barmode="group")
     fig3.update_layout(yaxis=korean_yaxis(df_bar["금액(KRW)"].max()))
+    apply_krw_hover(fig3)
     st.plotly_chart(fig3, width="stretch")

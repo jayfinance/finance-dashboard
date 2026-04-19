@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from ui.components import exchange_rate_header
-from ui.formatters import fmt_num
+from ui.formatters import fmt_num, apply_krw_hover
 from config import SHEET_NAMES
 from service.sheets import load_sheet_data
 
@@ -38,6 +38,7 @@ def render(spreadsheet, get_usdkrw):
         df_grp = df.groupby(group_col)["금액(KRW)"].sum().reset_index()
         fig = px.pie(df_grp, values="금액(KRW)", names=group_col, hole=0.3)
         fig.update_traces(textposition="inside", textinfo="percent+label")
+        apply_krw_hover(fig)
         st.plotly_chart(fig, width="stretch")
 
     with col2:
@@ -45,6 +46,7 @@ def render(spreadsheet, get_usdkrw):
         df_cur = df.groupby("통화")["금액(KRW)"].sum().reset_index()
         fig2 = px.pie(df_cur, values="금액(KRW)", names="통화", hole=0.3)
         fig2.update_traces(textposition="inside", textinfo="percent+label")
+        apply_krw_hover(fig2)
         st.plotly_chart(fig2, width="stretch")
 
     if "소유" in df.columns:
@@ -55,10 +57,12 @@ def render(spreadsheet, get_usdkrw):
             fig_o = px.pie(pivot_owner, values="금액(KRW)", names="소유", hole=0.35)
             fig_o.update_traces(textposition="inside", textinfo="percent+label")
             fig_o.update_layout(showlegend=False, margin=dict(t=20, b=20))
+            apply_krw_hover(fig_o)
             st.plotly_chart(fig_o, width="stretch")
 
     st.markdown("##### 증권사/기관별 현금 보유액 (KRW)")
     if "증권사" in df.columns:
         df_inst = df.groupby("증권사")["금액(KRW)"].sum().reset_index().sort_values("금액(KRW)", ascending=False)
         fig3 = px.bar(df_inst, x="증권사", y="금액(KRW)")
+        apply_krw_hover(fig3)
         st.plotly_chart(fig3, width="stretch")

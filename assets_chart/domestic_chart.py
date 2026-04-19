@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from ui.formatters import fmt_num, fmt_pct
+from ui.formatters import fmt_num, fmt_pct, apply_krw_hover
 from ui.navigation import to_table_button
 from config import SHEET_NAMES
 from service.sheets import load_sheet_data
@@ -72,6 +72,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         fig = px.pie(pivot_item, values="평가총액", names="종목명", hole=0.35)
         fig.update_traces(textposition="inside", textinfo="percent+label")
         fig.update_layout(showlegend=False, margin=dict(t=20, b=20))
+        apply_krw_hover(fig)
         st.plotly_chart(fig, width="stretch")
 
     with col2:
@@ -80,6 +81,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         fig2 = px.pie(pivot_owner, values="평가총액", names="소유", hole=0.35)
         fig2.update_traces(textposition="inside", textinfo="percent+label")
         fig2.update_layout(showlegend=False, margin=dict(t=20, b=20))
+        apply_krw_hover(fig2)
         st.plotly_chart(fig2, width="stretch")
 
     # ── 2행: 성격별 비중 | 계좌구분별 비중 ──────────────
@@ -91,6 +93,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         fig3 = px.pie(pivot_nature, values="평가총액", names="성격", hole=0.35)
         fig3.update_traces(textposition="inside", textinfo="percent+label")
         fig3.update_layout(showlegend=False, margin=dict(t=20, b=20))
+        apply_krw_hover(fig3)
         st.plotly_chart(fig3, width="stretch")
 
     with col4:
@@ -99,6 +102,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         fig4 = px.pie(pivot_acct, values="평가총액", names="계좌구분", hole=0.35)
         fig4.update_traces(textposition="inside", textinfo="percent+label")
         fig4.update_layout(showlegend=False, margin=dict(t=20, b=20))
+        apply_krw_hover(fig4)
         st.plotly_chart(fig4, width="stretch")
 
     # ── 3행: 종목별 수익률 ────────────────────────────────
@@ -138,5 +142,6 @@ def render(spreadsheet, get_kr_price, gold_override):
     fig6 = px.bar(df_melt, x="종목명", y="금액(KRW)", color="구분", barmode="group",
                   color_discrete_map={"매입총액": "#636efa", "평가총액": "#00cc96"})
     fig6.update_layout(xaxis_title=None, margin=dict(t=20))
+    apply_krw_hover(fig6)
     st.plotly_chart(fig6, width="stretch")
 

@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import gspread
+from ui.formatters import apply_krw_hover
 from config import SHEET_NAMES
 from service.sheets import load_sheet_data
 
@@ -36,12 +37,14 @@ def render(spreadsheet):
         df_grp = df.groupby(name_col)["배당금(원)"].sum().reset_index()
         fig = px.pie(df_grp, values="배당금(원)", names=name_col, hole=0.3)
         fig.update_traces(textposition="inside", textinfo="percent+label")
+        apply_krw_hover(fig)
         st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.markdown("##### 종목별 배당금")
         df_sorted = df.groupby(name_col)["배당금(원)"].sum().reset_index().sort_values("배당금(원)", ascending=False)
         fig2 = px.bar(df_sorted, x=name_col, y="배당금(원)")
+        apply_krw_hover(fig2)
         st.plotly_chart(fig2, width="stretch")
 
     if "배당일" in df.columns:
@@ -50,4 +53,5 @@ def render(spreadsheet):
         df["연월"] = df["배당일"].dt.to_period("M").astype(str)
         df_monthly = df.groupby("연월")["배당금(원)"].sum().reset_index()
         fig3 = px.bar(df_monthly, x="연월", y="배당금(원)")
+        apply_krw_hover(fig3)
         st.plotly_chart(fig3, width="stretch")

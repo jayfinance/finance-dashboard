@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from ui.components import exchange_rate_header
-from ui.formatters import fmt_num, fmt_pct
+from ui.formatters import fmt_num, fmt_pct, apply_krw_hover
 from config import SHEET_NAMES
 from service.sheets import load_sheet_data
 
@@ -64,6 +64,7 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
         st.markdown("##### 코인별 평가금액 비중 (KRW)")
         fig = px.pie(df_valid, values="평가총액(KRW)", names="코인", hole=0.3)
         fig.update_traces(textposition="inside", textinfo="percent+label")
+        apply_krw_hover(fig)
         st.plotly_chart(fig, width="stretch")
 
     with col2:
@@ -96,6 +97,7 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
             fig_o = px.pie(pivot_owner, values="평가총액(KRW)", names="소유", hole=0.35)
             fig_o.update_traces(textposition="inside", textinfo="percent+label")
             fig_o.update_layout(showlegend=False, margin=dict(t=20, b=20))
+            apply_krw_hover(fig_o)
             st.plotly_chart(fig_o, width="stretch")
 
     st.markdown("##### 코인별 매입총액 vs 평가총액 (KRW)")
@@ -108,4 +110,5 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
     fig3 = px.bar(df_bar, x="코인", y="금액(KRW)", color="구분", barmode="group",
                   color_discrete_map={"매입총액(KRW)": "#636efa", "평가총액(KRW)": "#00cc96"})
     fig3.update_layout(xaxis_title=None, margin=dict(t=20))
+    apply_krw_hover(fig3)
     st.plotly_chart(fig3, width="stretch")

@@ -31,6 +31,36 @@ def fmt_pct(x):  # 퍼센트 소수점 2자리
     return "-" if v is None else f"{v:.2f}%"
 
 
+def fmt_korean(x) -> str:
+    """KRW 값을 한국식 단위(억원/만원/원)로 변환."""
+    v = _to_float(x)
+    if v is None:
+        return "-"
+    sign = "-" if v < 0 else ""
+    abs_v = abs(v)
+    if abs_v >= 1e8:
+        return f"{sign}{abs_v / 1e8:,.2f}억원"
+    elif abs_v >= 1e4:
+        return f"{sign}{abs_v / 1e4:,.0f}만원"
+    return f"{sign}{abs_v:,.0f}원"
+
+
+def apply_krw_hover(fig) -> None:
+    """Plotly 차트의 마우스오버 금액을 한국식 단위로 교체."""
+    multi = len(fig.data) > 1
+    for trace in fig.data:
+        if trace.type == "pie" and trace.values is not None:
+            trace.customdata = [fmt_korean(v) for v in trace.values]
+            trace.hovertemplate = "<b>%{label}</b><br>%{customdata}<br>%{percent:.1%}<extra></extra>"
+        elif trace.type == "bar" and trace.y is not None:
+            trace.customdata = [fmt_korean(v) for v in trace.y]
+            name_part = "%{fullData.name}: " if multi else ""
+            trace.hovertemplate = f"<b>%{{x}}</b><br>{name_part}%{{customdata}}<extra></extra>"
+        elif trace.type in ("scatter", "scattergl") and trace.y is not None:
+            trace.customdata = [fmt_korean(v) for v in trace.y]
+            trace.hovertemplate = "<b>%{x}</b><br>%{fullData.name}: %{customdata}<extra></extra>"
+
+
 def korean_yaxis(max_val: float, min_val: float = 0) -> dict:
     """Plotly yaxis layout dict with Korean 억원/만원 tick labels."""
     max_abs = max(abs(max_val), abs(min_val))
