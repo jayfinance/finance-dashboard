@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from ui.navigation import to_table_button
+from ui.formatters import fmt_num, fmt_pct
 from config import SHEET_NAMES
 from service.sheets import load_sheet_data
 
@@ -29,6 +30,21 @@ def render(spreadsheet, get_usdkrw):
         return
 
     df["평가손익(KRW)"] = df["현재 시세"] - df["매입가"]
+
+    total_buy = df["매입가"].sum()
+    total_eval = df["현재 시세"].sum()
+    total_pl = total_eval - total_buy
+    total_yield = (total_eval / total_buy - 1) * 100 if total_buy else 0
+    pl_color = "#ef553b" if total_pl < 0 else "#00cc96"
+    st.markdown(f"""
+    <div style='display:flex;gap:40px;font-size:1.05em;font-weight:bold;padding:8px 0;'>
+        <div>매입가 합계: {fmt_num(total_buy)} 원</div>
+        <div>현재 시세 합계: {fmt_num(total_eval)} 원</div>
+        <div style='color:{pl_color};'>평가손익: {fmt_num(total_pl)} 원</div>
+        <div style='color:{pl_color};'>전체 수익률: {fmt_pct(total_yield)}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     name_col = "구분" if "구분" in df.columns else df.columns[0]
 
     col1, col2 = st.columns(2)
