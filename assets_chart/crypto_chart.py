@@ -69,11 +69,8 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
     with col2:
         st.markdown("##### 코인별 수익률")
         pivot_yield = (
-            df_valid.groupby("코인", as_index=False)
-            .apply(lambda g: pd.Series({
-                "매입총액(KRW)": g["매입총액(KRW)"].sum(),
-                "평가총액(KRW)": g["평가총액(KRW)"].sum(),
-            }))
+            df_valid.groupby("코인")[["매입총액(KRW)", "평가총액(KRW)"]].sum()
+            .reset_index()
             .assign(**{"수익률(%)": lambda d: (d["평가총액(KRW)"] / d["매입총액(KRW)"] - 1) * 100})
             .sort_values("수익률(%)", ascending=True)
             .reset_index(drop=True)
