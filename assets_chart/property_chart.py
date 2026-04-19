@@ -1,11 +1,16 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from ui.navigation import to_table_button
 from config import SHEET_NAMES
 
 
 def render(spreadsheet, get_usdkrw):
-    st.subheader("📊 부동산자산 차트")
+    col_t, col_b = st.columns([5, 1])
+    with col_t:
+        st.subheader("📊 부동산자산 차트")
+    with col_b:
+        to_table_button("부동산자산")
 
     sheet = spreadsheet.worksheet(SHEET_NAMES["property"])
     rows = sheet.get_all_values()

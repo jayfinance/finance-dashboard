@@ -9,7 +9,7 @@ from config import SHEET_NAMES
 
 def render(spreadsheet, get_usdkrw, get_crypto_prices):
     usdkrw = get_usdkrw()
-    exchange_rate_header("📊 가상자산 차트", usdkrw)
+    exchange_rate_header("📊 가상자산 차트", usdkrw, nav_label="📋 테이블 보러가기", nav_section="Table", nav_page="가상자산")
 
     sheet = spreadsheet.worksheet(SHEET_NAMES["crypto"])
     rows = sheet.get_all_values()

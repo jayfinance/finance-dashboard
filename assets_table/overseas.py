@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from ui.formatters import fmt_num, fmt_num2, fmt_pct
 from ui.filters import render_table_filters
+from ui.navigation import to_chart_button
 from config import SHEET_NAMES
 
 
@@ -11,9 +12,11 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
     jpykrw = get_jpykrw()
 
     # ── 환율 드롭다운 헤더 ─────────────────────────────────
-    left, right = st.columns([3, 2])
+    left, mid, right = st.columns([3, 1, 2])
     with left:
         st.subheader("📋 해외 투자자산 평가 테이블")
+    with mid:
+        to_chart_button("해외 투자자산 차트")
     with right:
         currency_display = st.selectbox(
             "환율 표시",

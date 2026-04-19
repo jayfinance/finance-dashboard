@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from ui.formatters import fmt_num, fmt_pct
+from ui.navigation import to_chart_button
 from config import SHEET_NAMES
 
 NATURES    = ["금", "배당", "성장", "안정", "채권", "현금", "예금", "펀드", "가상자산"]
@@ -559,7 +560,11 @@ def _account_etc(spreadsheet):
 # ── 메인 렌더 ─────────────────────────────────────────────────────────────────
 
 def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override, get_jpykrw):
-    st.subheader("📋 종합 자산 요약")
+    col_t, col_b = st.columns([5, 1])
+    with col_t:
+        st.subheader("📋 종합 자산 요약")
+    with col_b:
+        to_chart_button("종합 차트")
 
     with st.spinner("전체 자산 데이터 로딩 중..."):
         dom_buy,  dom_eval  = _sum_domestic(spreadsheet, get_kr_price, gold_override)

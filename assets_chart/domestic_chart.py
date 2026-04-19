@@ -3,11 +3,16 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from ui.formatters import fmt_num, fmt_pct
+from ui.navigation import to_table_button
 from config import SHEET_NAMES
 
 
 def render(spreadsheet, get_kr_price, gold_override):
-    st.subheader("📊 국내 투자자산 차트")
+    col_t, col_b = st.columns([5, 1])
+    with col_t:
+        st.subheader("📊 국내 투자자산 차트")
+    with col_b:
+        to_table_button("국내 투자자산")
 
     # ── 데이터 로드 ───────────────────────────────────────
     sheet = spreadsheet.worksheet(SHEET_NAMES["domestic"])

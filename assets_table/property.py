@@ -2,11 +2,16 @@ import streamlit as st
 import pandas as pd
 from ui.formatters import fmt_num, fmt_pct
 from ui.filters import render_table_filters
+from ui.navigation import to_chart_button
 from config import SHEET_NAMES
 
 
 def render(spreadsheet, get_usdkrw):
-    st.subheader("📋 부동산자산 테이블")
+    col_t, col_b = st.columns([5, 1])
+    with col_t:
+        st.subheader("📋 부동산자산 테이블")
+    with col_b:
+        to_chart_button("부동산자산 차트")
 
     sheet = spreadsheet.worksheet(SHEET_NAMES["property"])
     rows = sheet.get_all_values()

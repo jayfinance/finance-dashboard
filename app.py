@@ -84,7 +84,7 @@ def _on_chart_div():
 # 사이드바 메뉴
 # =========================================================
 st.sidebar.markdown("## 📂 메뉴")
-section = st.sidebar.radio("대분류", ["Table", "Chart"])
+section = st.sidebar.radio("대분류", ["Table", "Chart"], key="main_section")
 
 page = None
 

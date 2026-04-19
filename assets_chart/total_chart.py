@@ -8,7 +8,12 @@ from assets_table.total import (
 
 
 def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_prices, gold_override):
-    st.subheader("📊 종합 자산 차트")
+    from ui.navigation import to_table_button
+    col_t, col_b = st.columns([5, 1])
+    with col_t:
+        st.subheader("📊 종합 자산 차트")
+    with col_b:
+        to_table_button("종합")
 
     with st.spinner("전체 자산 데이터 로딩 중..."):
         _, dom_eval   = _sum_domestic(spreadsheet, get_kr_price, gold_override)

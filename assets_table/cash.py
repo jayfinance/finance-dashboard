@@ -9,7 +9,7 @@ from config import SHEET_NAMES
 
 def render(spreadsheet, get_usdkrw):
     usdkrw = get_usdkrw()
-    exchange_rate_header("📋 현금성자산 테이블", usdkrw)
+    exchange_rate_header("📋 현금성자산 테이블", usdkrw, nav_label="📊 차트 보러가기", nav_section="Chart", nav_page="현금성자산 차트")
 
     try:
         sheet = spreadsheet.worksheet(SHEET_NAMES["cash"])
