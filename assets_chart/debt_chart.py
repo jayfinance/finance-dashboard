@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from ui.components import exchange_rate_header
-from ui.formatters import fmt_num
+from ui.formatters import fmt_num, korean_yaxis
 from config import SHEET_NAMES
 from service.sheets import load_sheet_data
 
@@ -47,9 +47,11 @@ def render(spreadsheet, get_usdkrw):
         if "소유" in df.columns:
             df_own = df.groupby("소유")["현재부채"].sum().reset_index()
             fig2 = px.bar(df_own, x="소유", y="현재부채")
+            fig2.update_layout(yaxis=korean_yaxis(df_own["현재부채"].max()))
             st.plotly_chart(fig2, width="stretch")
 
     st.markdown("##### 구분별 부채 금액")
     df_sorted = df.sort_values("현재부채", ascending=False)
     fig3 = px.bar(df_sorted, x=group_col, y="현재부채")
+    fig3.update_layout(yaxis=korean_yaxis(df_sorted["현재부채"].max()))
     st.plotly_chart(fig3, width="stretch")

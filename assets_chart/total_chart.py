@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from ui.formatters import fmt_num, fmt_pct
+from ui.formatters import fmt_num, fmt_pct, korean_yaxis
 from ui.navigation import to_table_button
 from assets_table.total import (
     _sum_domestic, _sum_overseas, _sum_crypto,
@@ -83,7 +83,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
             df_net, x="구분", y="금액 (KRW)", color="구분",
             color_discrete_sequence=["#636efa", "#ef553b", "#00cc96"],
         )
-        fig2.update_layout(showlegend=False)
+        fig2.update_layout(showlegend=False, yaxis=korean_yaxis(max(total_assets, debt_total, net_assets)))
         st.plotly_chart(fig2, width="stretch")
 
     # ── 차트 3: 매입 vs 평가 ────────────────────────────────
@@ -94,6 +94,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
         var_name="구분", value_name="금액 (KRW)",
     )
     fig3 = px.bar(df_melt, x="자산 종류", y="금액 (KRW)", color="구분", barmode="group")
+    fig3.update_layout(yaxis=korean_yaxis(df_melt["금액 (KRW)"].max()))
     st.plotly_chart(fig3, width="stretch")
 
     # ── 차트 4: 수익률 ──────────────────────────────────────
@@ -149,5 +150,7 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price, get_crypto_price
             for label, d in zip(asset_labels, eval_dicts)
         ]
         df_stacked = pd.DataFrame(stacked_rows)
+        max_stacked = df_stacked.groupby("소유")["금액 (KRW)"].sum().max()
         fig6 = px.bar(df_stacked, x="소유", y="금액 (KRW)", color="자산 종류", barmode="stack")
+        fig6.update_layout(yaxis=korean_yaxis(max_stacked))
         st.plotly_chart(fig6, width="stretch")

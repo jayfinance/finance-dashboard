@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from ui.navigation import to_table_button
-from ui.formatters import fmt_num, fmt_pct
+from ui.formatters import fmt_num, fmt_pct, korean_yaxis
 from config import SHEET_NAMES
 from service.sheets import load_sheet_data
 
@@ -59,7 +59,10 @@ def render(spreadsheet, get_usdkrw):
         st.markdown("##### 항목별 평가손익")
         fig2 = px.bar(df, x=name_col, y="평가손익(KRW)",
                       color="평가손익(KRW)", color_continuous_scale=["#ef553b", "#636efa", "#00cc96"])
-        fig2.update_layout(coloraxis_showscale=False)
+        fig2.update_layout(
+            coloraxis_showscale=False,
+            yaxis=korean_yaxis(df["평가손익(KRW)"].max(), df["평가손익(KRW)"].min()),
+        )
         st.plotly_chart(fig2, width="stretch")
 
     if "소유" in df.columns:
@@ -75,4 +78,5 @@ def render(spreadsheet, get_usdkrw):
     st.markdown("##### 항목별 매입가 vs 현재 시세")
     df_bar = df.melt(id_vars=name_col, value_vars=["매입가", "현재 시세"], var_name="항목", value_name="금액(KRW)")
     fig3 = px.bar(df_bar, x=name_col, y="금액(KRW)", color="항목", barmode="group")
+    fig3.update_layout(yaxis=korean_yaxis(df_bar["금액(KRW)"].max()))
     st.plotly_chart(fig3, width="stretch")
