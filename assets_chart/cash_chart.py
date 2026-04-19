@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from ui.components import exchange_rate_header
+from ui.formatters import fmt_num
 from config import SHEET_NAMES
 
 
@@ -21,6 +22,13 @@ def render(spreadsheet, get_usdkrw):
     df["금액(KRW)"] = df.apply(
         lambda r: r["금액"] if r["통화"] == "KRW" else (r["금액"] * usdkrw if usdkrw else 0), axis=1
     )
+
+    total_cash = df["금액(KRW)"].sum()
+    st.markdown(f"""
+<div style='display:flex;gap:40px;font-size:1.05em;font-weight:bold;padding:8px 0;'>
+    <div>현금성자산 총액: {fmt_num(total_cash)} 원</div>
+</div>
+""", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
