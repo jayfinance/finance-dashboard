@@ -38,31 +38,54 @@ def _compute_snapshot(spreadsheet, get_usdkrw, get_kr_price, get_us_price,
 
     row = {"기준일": datetime.date.today().strftime("%Y-%m-%d")}
 
-    total_eval_net = 0
-    total_buy_net  = 0
-
+    # 소유자별 값 사전 계산
+    owner_data = {}
     for owner in all_owners:
-        eval_vals = [d.get(owner, 0) for d in eval_lists]
-        buy_vals  = [d.get(owner, 0) for d in buy_lists]
-        debt_val  = debt_by.get(owner, 0)
+        buy_vals   = [d.get(owner, 0) for d in buy_lists]
+        eval_vals  = [d.get(owner, 0) for d in eval_lists]
+        debt_val   = debt_by.get(owner, 0)
+        buy_total  = sum(buy_vals)
+        eval_total = sum(eval_vals)
+        owner_data[owner] = {
+            "buy_vals":   buy_vals,
+            "eval_vals":  eval_vals,
+            "debt_val":   debt_val,
+            "buy_total":  buy_total,
+            "eval_total": eval_total,
+            "buy_net":    buy_total  - debt_val,
+            "eval_net":   eval_total - debt_val,
+        }
 
-        for short, ev, bv in zip(_ASSET_SHORTS, eval_vals, buy_vals):
+    # ── 매입 컬럼 (전체 소유자) ──────────────────────────
+    total_buy_total = 0
+    total_buy_net   = 0
+    for owner in all_owners:
+        d = owner_data[owner]
+        for short, bv in zip(_ASSET_SHORTS, d["buy_vals"]):
             row[f"매입-{short}({owner})"] = round(bv)
-            row[f"평가-{short}({owner})"] = round(ev)
+        row[f"매입-부채({owner})"]   = round(d["debt_val"])
+        row[f"매입-총자산({owner})"] = round(d["buy_total"])
+        row[f"매입-순자산({owner})"] = round(d["buy_net"])
+        total_buy_total += d["buy_total"]
+        total_buy_net   += d["buy_net"]
 
-        # 부채: 매입·평가 동일 값
-        row[f"매입-부채({owner})"] = round(debt_val)
-        row[f"평가-부채({owner})"] = round(debt_val)
-
-        owner_buy_net  = sum(buy_vals)  - debt_val
-        owner_eval_net = sum(eval_vals) - debt_val
-        row[f"매입-순자산({owner})"] = round(owner_buy_net)
-        row[f"평가-순자산({owner})"] = round(owner_eval_net)
-
-        total_buy_net  += owner_buy_net
-        total_eval_net += owner_eval_net
-
+    row["매입 총자산"]   = round(total_buy_total)
     row["매입 총 순자산"] = round(total_buy_net)
+
+    # ── 평가 컬럼 (전체 소유자) ──────────────────────────
+    total_eval_total = 0
+    total_eval_net   = 0
+    for owner in all_owners:
+        d = owner_data[owner]
+        for short, ev in zip(_ASSET_SHORTS, d["eval_vals"]):
+            row[f"평가-{short}({owner})"] = round(ev)
+        row[f"평가-부채({owner})"]   = round(d["debt_val"])
+        row[f"평가-총자산({owner})"] = round(d["eval_total"])
+        row[f"평가-순자산({owner})"] = round(d["eval_net"])
+        total_eval_total += d["eval_total"]
+        total_eval_net   += d["eval_net"]
+
+    row["평가 총자산"]   = round(total_eval_total)
     row["평가 총 순자산"] = round(total_eval_net)
 
     # 총 현금성 자산 비중 = 전체 현금성자산 평가합 / 전체 순자산 평가합 × 100
@@ -103,11 +126,14 @@ def render(spreadsheet, get_usdkrw, get_kr_price, get_us_price,
     def _fmt_snap_val(k, v):
         if k == "기준일":
             return v
-        if k == "총 현금성 자산 비중":
+        if "비중" in k:
             return f"{v:.2f}%"
-        return f"{v:,.0f}"
+        return fmt_num(v)
 
-    snap_rows = [{"항목": k, "값": _fmt_snap_val(k, v)} for k, v in snapshot.items()]
+    # 시트 헤더 순서에 맞춰 표시 (입력 시 매칭 순서와 동일)
+    col_order = rows[0] if rows else list(snapshot.keys())
+    snap_rows = [{"항목": k, "값": _fmt_snap_val(k, snapshot[k])}
+                 for k in col_order if k in snapshot]
     st.dataframe(pd.DataFrame(snap_rows), width="stretch", hide_index=True)
 
     # ── 입력 버튼 ──────────────────────────────────────────

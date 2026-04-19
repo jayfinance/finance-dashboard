@@ -277,7 +277,8 @@ def _build_owner_pivot(eval_dicts, buy_dicts, debt_by, labels):
             for label, d in zip(labels, dicts):
                 row[label] = d.get(owner, 0)
             row["부채"] = debt.get(owner, 0)
-            row["Total (순자산)"] = sum(d.get(owner, 0) for d in dicts) - debt.get(owner, 0)
+            row["Total (총자산)"] = sum(d.get(owner, 0) for d in dicts)
+            row["Total (순자산)"] = row["Total (총자산)"] - debt.get(owner, 0)
             rows.append(row)
         df = pd.DataFrame(rows)
         sum_row = {c: df[c].sum() for c in df.columns if c != "소유"}
