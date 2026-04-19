@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from ui.formatters import fmt_num, fmt_pct
 from ui.navigation import to_table_button
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 
 def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
@@ -19,8 +20,7 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
     rate_map = {"USD": usdkrw, "JPY": jpykrw}
 
     # ── 데이터 로드 ───────────────────────────────────────
-    sheet = spreadsheet.worksheet(SHEET_NAMES["overseas"])
-    rows = sheet.get_all_values()
+    rows = load_sheet_data(spreadsheet, SHEET_NAMES["overseas"])
     if not rows or len(rows) < 2:
         st.warning("해외자산 시트에 데이터가 없습니다.")
         return

@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from ui.formatters import fmt_num, fmt_pct
 from ui.navigation import to_table_button
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 
 def render(spreadsheet, get_kr_price, gold_override):
@@ -15,8 +16,7 @@ def render(spreadsheet, get_kr_price, gold_override):
         to_table_button("국내 투자자산")
 
     # ── 데이터 로드 ───────────────────────────────────────
-    sheet = spreadsheet.worksheet(SHEET_NAMES["domestic"])
-    rows = sheet.get_all_values()
+    rows = load_sheet_data(spreadsheet, SHEET_NAMES["domestic"])
     if not rows or len(rows) < 2:
         st.warning("국내자산 시트에 데이터가 없습니다.")
         return

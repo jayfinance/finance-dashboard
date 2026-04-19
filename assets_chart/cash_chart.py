@@ -4,14 +4,14 @@ import plotly.express as px
 from ui.components import exchange_rate_header
 from ui.formatters import fmt_num
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 
 def render(spreadsheet, get_usdkrw):
     usdkrw = get_usdkrw()
     exchange_rate_header("📊 현금성자산 차트", usdkrw, nav_label="📋 테이블 보러가기", nav_section="Table", nav_page="현금성자산")
 
-    sheet = spreadsheet.worksheet(SHEET_NAMES["cash"])
-    rows = sheet.get_all_values()
+    rows = load_sheet_data(spreadsheet, SHEET_NAMES["cash"])
     if not rows or len(rows) < 2:
         st.warning("현금성자산 시트에 데이터가 없습니다.")
         return

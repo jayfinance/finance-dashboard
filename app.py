@@ -165,6 +165,14 @@ elif section == "Chart":
         page = st.session_state.get("chart_div", "국내 배당 차트")
 
 # -------------------------------
+# 데이터 새로고침
+# -------------------------------
+st.sidebar.markdown("---")
+if st.sidebar.button("🔄 데이터 새로고침", help="Google Sheets 캐시(5분)를 즉시 초기화합니다."):
+    st.cache_data.clear()
+    st.rerun()
+
+# -------------------------------
 # 금 수동 입력 옵션
 # -------------------------------
 st.sidebar.markdown("---")

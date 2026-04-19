@@ -2,6 +2,13 @@ import gspread
 import streamlit as st
 from google.oauth2.service_account import Credentials
 
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_sheet_data(_spreadsheet, sheet_name: str):
+    """Google Sheets 시트 데이터를 5분 캐시로 읽기. (_spreadsheet는 해시 제외)"""
+    return _spreadsheet.worksheet(sheet_name).get_all_values()
+
+
 @st.cache_resource(show_spinner="📡 Google Sheets 연결 중...")
 def get_spreadsheet():
     try:

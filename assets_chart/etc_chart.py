@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from ui.navigation import to_table_button
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 
 def render(spreadsheet, get_usdkrw):
@@ -12,8 +13,7 @@ def render(spreadsheet, get_usdkrw):
     with col_b:
         to_table_button("기타자산")
 
-    sheet = spreadsheet.worksheet(SHEET_NAMES["etc"])
-    rows = sheet.get_all_values()
+    rows = load_sheet_data(spreadsheet, SHEET_NAMES["etc"])
     if not rows or len(rows) < 2:
         st.warning("기타자산 시트에 데이터가 없습니다.")
         return

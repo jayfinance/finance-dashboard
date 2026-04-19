@@ -4,6 +4,7 @@ from ui.formatters import fmt_num, fmt_num2, fmt_pct
 from ui.filters import render_table_filters
 from ui.navigation import to_chart_button
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 
 def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
@@ -40,8 +41,7 @@ def render(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
     view_option = st.radio("표시 통화 옵션", ["모두 보기", "LC로 보기", "KRW로 보기"], horizontal=True)
 
     # ── 시트 로드 ──────────────────────────────────────────
-    sheet = spreadsheet.worksheet(SHEET_NAMES["overseas"])
-    rows = sheet.get_all_values()
+    rows = load_sheet_data(spreadsheet, SHEET_NAMES["overseas"])
     if not rows or len(rows) < 2:
         st.warning("해외자산 시트에 데이터가 없습니다.")
         return

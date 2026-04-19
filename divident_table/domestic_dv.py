@@ -3,6 +3,7 @@ import pandas as pd
 import gspread
 from ui.formatters import fmt_num, fmt_pct
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 
 def render(spreadsheet):
@@ -19,7 +20,7 @@ def render(spreadsheet):
         """)
         return
 
-    rows = sheet.get_all_values()
+    rows = load_sheet_data(spreadsheet, SHEET_NAMES["domestic_div"])
     if not rows or len(rows) < 2:
         st.warning("국내배당 시트에 데이터가 없습니다.")
         return

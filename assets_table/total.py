@@ -3,6 +3,7 @@ import pandas as pd
 from ui.formatters import fmt_num, fmt_pct
 from ui.navigation import to_chart_button
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 NATURES    = ["금", "배당", "성장", "안정", "채권", "현금", "예금", "펀드", "가상자산"]
 ACCOUNTS   = ["금현물", "연금저축", "저축", "주식", "퇴직연금", "IRP", "ISA", "코인"]
@@ -13,8 +14,7 @@ ASSET_COLS = ["국내 투자자산", "해외 투자자산", "가상자산", "현
 
 def _sum_domestic(spreadsheet, get_kr_price, gold_override):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["domestic"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["domestic"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
         df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
@@ -32,8 +32,7 @@ def _sum_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
         usdkrw = get_usdkrw()
         jpykrw = get_jpykrw()
         rate_map = {"USD": usdkrw, "JPY": jpykrw}
-        sheet = spreadsheet.worksheet(SHEET_NAMES["overseas"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["overseas"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["보유수량"] = pd.to_numeric(df["보유수량"].astype(str).str.replace(",", ""), errors="coerce")
         df["매수단가"] = pd.to_numeric(df["매수단가"].astype(str).str.replace(",", ""), errors="coerce")
@@ -51,8 +50,7 @@ def _sum_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
 def _sum_crypto(spreadsheet, get_usdkrw, get_crypto_prices):
     try:
         usdkrw = get_usdkrw()
-        sheet = spreadsheet.worksheet(SHEET_NAMES["crypto"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["crypto"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].astype(str).str.replace(",", ""), errors="coerce")
         df["평균매수가(avg_price)"] = pd.to_numeric(df["평균매수가(avg_price)"].astype(str).str.replace(",", ""), errors="coerce")
@@ -85,8 +83,7 @@ def _sum_crypto(spreadsheet, get_usdkrw, get_crypto_prices):
 def _sum_cash(spreadsheet, get_usdkrw):
     try:
         usdkrw = get_usdkrw()
-        sheet = spreadsheet.worksheet(SHEET_NAMES["cash"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["cash"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["금액"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         df["통화"] = df["통화"].astype(str).str.strip().str.upper()
@@ -101,8 +98,7 @@ def _sum_cash(spreadsheet, get_usdkrw):
 
 def _sum_property(spreadsheet):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["property"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["property"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         buy = pd.to_numeric(df["매입가"].astype(str).str.replace(",", ""), errors="coerce").fillna(0).sum()
         cur = pd.to_numeric(df["현재 시세"].astype(str).str.replace(",", ""), errors="coerce").fillna(0).sum()
@@ -113,8 +109,7 @@ def _sum_property(spreadsheet):
 
 def _sum_etc(spreadsheet):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["etc"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["etc"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         buy = pd.to_numeric(df["매입가"].astype(str).str.replace(",", ""), errors="coerce").fillna(0).sum()
         cur = pd.to_numeric(df["현재 시세"].astype(str).str.replace(",", ""), errors="coerce").fillna(0).sum()
@@ -125,8 +120,7 @@ def _sum_etc(spreadsheet):
 
 def _sum_debt(spreadsheet):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["debt"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["debt"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["현재부채"] = pd.to_numeric(df["현재부채"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         return df["현재부채"].sum()
@@ -138,8 +132,7 @@ def _sum_debt(spreadsheet):
 
 def _byowner_domestic(spreadsheet, get_kr_price, gold_override):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["domestic"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["domestic"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
         df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
@@ -161,8 +154,7 @@ def _byowner_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
         usdkrw = get_usdkrw()
         jpykrw = get_jpykrw()
         rate_map = {"USD": usdkrw, "JPY": jpykrw}
-        sheet = spreadsheet.worksheet(SHEET_NAMES["overseas"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["overseas"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["보유수량"] = pd.to_numeric(df["보유수량"].astype(str).str.replace(",", ""), errors="coerce")
         df["매수단가"] = pd.to_numeric(df["매수단가"].astype(str).str.replace(",", ""), errors="coerce")
@@ -183,8 +175,7 @@ def _byowner_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
 def _byowner_crypto(spreadsheet, get_usdkrw, get_crypto_prices):
     try:
         usdkrw = get_usdkrw()
-        sheet = spreadsheet.worksheet(SHEET_NAMES["crypto"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["crypto"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].astype(str).str.replace(",", ""), errors="coerce")
         df["평균매수가(avg_price)"] = pd.to_numeric(df["평균매수가(avg_price)"].astype(str).str.replace(",", ""), errors="coerce")
@@ -217,8 +208,7 @@ def _byowner_crypto(spreadsheet, get_usdkrw, get_crypto_prices):
 def _byowner_cash(spreadsheet, get_usdkrw):
     try:
         usdkrw = get_usdkrw()
-        sheet = spreadsheet.worksheet(SHEET_NAMES["cash"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["cash"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["금액"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         df["통화"] = df["통화"].astype(str).str.strip().str.upper()
@@ -233,8 +223,7 @@ def _byowner_cash(spreadsheet, get_usdkrw):
 
 def _byowner_property(spreadsheet):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["property"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["property"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["매입가"] = pd.to_numeric(df["매입가"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         df["현재 시세"] = pd.to_numeric(df["현재 시세"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
@@ -248,8 +237,7 @@ def _byowner_property(spreadsheet):
 
 def _byowner_etc(spreadsheet):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["etc"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["etc"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["매입가"] = pd.to_numeric(df["매입가"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         df["현재 시세"] = pd.to_numeric(df["현재 시세"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
@@ -263,8 +251,7 @@ def _byowner_etc(spreadsheet):
 
 def _byowner_debt(spreadsheet):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["debt"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["debt"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["현재부채"] = pd.to_numeric(df["현재부채"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         return df.groupby("소유")["현재부채"].sum().to_dict()
@@ -319,8 +306,7 @@ def _fmt_pivot(df):
 
 def _nature_domestic(spreadsheet, get_kr_price, gold_override):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["domestic"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["domestic"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
         df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
@@ -336,8 +322,7 @@ def _nature_domestic(spreadsheet, get_kr_price, gold_override):
 def _nature_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
     try:
         rate_map = {"USD": get_usdkrw(), "JPY": get_jpykrw()}
-        sheet = spreadsheet.worksheet(SHEET_NAMES["overseas"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["overseas"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["보유수량"] = pd.to_numeric(df["보유수량"].astype(str).str.replace(",", ""), errors="coerce")
         df["현재환율"] = df["화폐"].str.upper().str.strip().map(rate_map)
@@ -352,8 +337,7 @@ def _nature_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
 def _nature_crypto(spreadsheet, get_usdkrw, get_crypto_prices):
     try:
         usdkrw = get_usdkrw()
-        sheet = spreadsheet.worksheet(SHEET_NAMES["crypto"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["crypto"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].astype(str).str.replace(",", ""), errors="coerce")
         df["coingecko_id"] = df["coingecko_id"].astype(str).str.strip().str.lower()
@@ -380,8 +364,7 @@ def _nature_crypto(spreadsheet, get_usdkrw, get_crypto_prices):
 def _nature_cash(spreadsheet, get_usdkrw):
     try:
         usdkrw = get_usdkrw()
-        sheet = spreadsheet.worksheet(SHEET_NAMES["cash"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["cash"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["금액_raw"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         df["통화"] = df["통화"].astype(str).str.strip().str.upper()
@@ -395,8 +378,7 @@ def _nature_cash(spreadsheet, get_usdkrw):
 
 def _nature_etc(spreadsheet):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["etc"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["etc"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["금액"] = pd.to_numeric(df["현재 시세"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         return df[["소유", "성격", "금액"]]
@@ -472,8 +454,7 @@ def _style_sum(df, label_col):
 
 def _account_domestic(spreadsheet, get_kr_price, gold_override):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["domestic"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["domestic"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["종목코드"] = df["종목코드"].astype(str).str.zfill(6)
         df["보유수량"] = pd.to_numeric(df["보유수량"].str.replace(",", ""), errors="coerce")
@@ -489,8 +470,7 @@ def _account_domestic(spreadsheet, get_kr_price, gold_override):
 def _account_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
     try:
         rate_map = {"USD": get_usdkrw(), "JPY": get_jpykrw()}
-        sheet = spreadsheet.worksheet(SHEET_NAMES["overseas"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["overseas"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["보유수량"] = pd.to_numeric(df["보유수량"].astype(str).str.replace(",", ""), errors="coerce")
         df["현재환율"] = df["화폐"].str.upper().str.strip().map(rate_map)
@@ -505,8 +485,7 @@ def _account_overseas(spreadsheet, get_usdkrw, get_us_price, get_jpykrw):
 def _account_crypto(spreadsheet, get_usdkrw, get_crypto_prices):
     try:
         usdkrw = get_usdkrw()
-        sheet = spreadsheet.worksheet(SHEET_NAMES["crypto"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["crypto"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["수량(qty)"] = pd.to_numeric(df["수량(qty)"].astype(str).str.replace(",", ""), errors="coerce")
         df["coingecko_id"] = df["coingecko_id"].astype(str).str.strip().str.lower()
@@ -533,8 +512,7 @@ def _account_crypto(spreadsheet, get_usdkrw, get_crypto_prices):
 def _account_cash(spreadsheet, get_usdkrw):
     try:
         usdkrw = get_usdkrw()
-        sheet = spreadsheet.worksheet(SHEET_NAMES["cash"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["cash"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["금액_raw"] = pd.to_numeric(df["금액"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         df["통화"] = df["통화"].astype(str).str.strip().str.upper()
@@ -548,8 +526,7 @@ def _account_cash(spreadsheet, get_usdkrw):
 
 def _account_etc(spreadsheet):
     try:
-        sheet = spreadsheet.worksheet(SHEET_NAMES["etc"])
-        rows = sheet.get_all_values()
+        rows = load_sheet_data(spreadsheet, SHEET_NAMES["etc"])
         df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
         df["금액"] = pd.to_numeric(df["현재 시세"].astype(str).str.replace(",", ""), errors="coerce").fillna(0)
         return df[["소유", "계좌구분", "금액"]]

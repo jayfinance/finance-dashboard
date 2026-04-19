@@ -4,6 +4,7 @@ from ui.formatters import fmt_num, fmt_pct
 from ui.filters import render_table_filters
 from ui.navigation import to_chart_button
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 
 def render(spreadsheet, get_usdkrw):
@@ -13,8 +14,7 @@ def render(spreadsheet, get_usdkrw):
     with col_b:
         to_chart_button("부동산자산 차트")
 
-    sheet = spreadsheet.worksheet(SHEET_NAMES["property"])
-    rows = sheet.get_all_values()
+    rows = load_sheet_data(spreadsheet, SHEET_NAMES["property"])
     if not rows or len(rows) < 2:
         st.warning("부동산 시트에 데이터가 없습니다.")
         return

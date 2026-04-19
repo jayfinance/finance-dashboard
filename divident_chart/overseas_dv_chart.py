@@ -4,6 +4,7 @@ import plotly.express as px
 import gspread
 from ui.components import exchange_rate_header
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 
 def render(spreadsheet, get_usdkrw):
@@ -16,7 +17,7 @@ def render(spreadsheet, get_usdkrw):
         st.info("'해외배당' 시트가 아직 없습니다. 테이블 메뉴의 '해외 배당' 화면에서 시트 구성 가이드를 확인하세요.")
         return
 
-    rows = sheet.get_all_values()
+    rows = load_sheet_data(spreadsheet, SHEET_NAMES["overseas_div"])
     if not rows or len(rows) < 2:
         st.warning("해외배당 시트에 데이터가 없습니다.")
         return

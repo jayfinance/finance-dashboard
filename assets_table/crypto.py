@@ -4,6 +4,7 @@ from ui.formatters import fmt_num, fmt_pct
 from ui.components import exchange_rate_header
 from ui.filters import render_table_filters
 from config import SHEET_NAMES
+from service.sheets import load_sheet_data
 
 
 def render(spreadsheet, get_usdkrw, get_crypto_prices):
@@ -11,8 +12,7 @@ def render(spreadsheet, get_usdkrw, get_crypto_prices):
     usdkrw = get_usdkrw()
     exchange_rate_header("📋 가상자산 평가 테이블", usdkrw, nav_label="📊 차트 보러가기", nav_section="Chart", nav_page="가상자산 차트")
 
-    sheet = spreadsheet.worksheet(SHEET_NAMES["crypto"])
-    rows = sheet.get_all_values()
+    rows = load_sheet_data(spreadsheet, SHEET_NAMES["crypto"])
     raw_df = pd.DataFrame(rows[1:], columns=rows[0]).rename(columns=lambda x: x.strip())
 
     required_cols = ["증권사", "소유", "코인", "심볼", "coingecko_id", "통화", "수량(qty)", "평균매수가(avg_price)"]
