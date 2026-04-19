@@ -66,6 +66,20 @@ for k, v in _defaults.items():
         st.session_state[k] = v
 
 # =========================================================
+# 네비게이션 버튼 처리 — 위젯 렌더링 전에 실행해야 함
+# =========================================================
+if "_pending_nav_section" in st.session_state:
+    _ns = st.session_state.pop("_pending_nav_section")
+    _np = st.session_state.pop("_pending_nav_page")
+    st.session_state["main_section"] = _ns
+    if _ns == "Chart":
+        st.session_state["chart_assets"] = _np
+        st.session_state["chart_active_section"] = "assets"
+    else:
+        st.session_state["table_assets"] = _np
+        st.session_state["table_active_section"] = "assets"
+
+# =========================================================
 # 사이드바 콜백 — 클릭된 라디오 그룹을 활성으로 기록
 # =========================================================
 def _on_table_assets():

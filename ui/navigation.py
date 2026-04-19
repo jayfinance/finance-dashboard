@@ -4,13 +4,9 @@ import streamlit as st
 def _nav_button(label: str, target_section: str, target_page: str):
     key = f"nav__{target_section}__{target_page}"
     if st.button(label, key=key):
-        st.session_state["main_section"] = target_section
-        if target_section == "Chart":
-            st.session_state["chart_assets"] = target_page
-            st.session_state["chart_active_section"] = "assets"
-        else:
-            st.session_state["table_assets"] = target_page
-            st.session_state["table_active_section"] = "assets"
+        # 위젯 렌더링 전 시점에 처리하기 위해 pending 키로 저장
+        st.session_state["_pending_nav_section"] = target_section
+        st.session_state["_pending_nav_page"] = target_page
         st.rerun()
 
 
